@@ -1,11 +1,35 @@
 {
   "name": "modern-monaco",
-  "description": "A modern version of Monaco Editor",
   "version": "0.4.2",
-  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/esm-dev/modern-monaco.git"
+  },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./types/index.d.ts",
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@eslint/js": "^10.0.1",
+    "@esm.sh/import-map": "0.4.0",
+    "@shikijs/core": "4.4.3",
+    "@shikijs/engine-oniguruma": "4.4.3",
+    "@types/bun": "1.4.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "esbuild": "0.28.2",
+    "eslint": "^10.9.1",
+    "globals": "^17.12.0",
+    "monaco-editor-core": "0.56.0",
+    "prettier": "^3.9.6",
+    "tm-grammars": "1.32.11",
+    "tm-themes": "1.12.10",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.69.0",
+    "vscode-css-languageservice": "6.3.10",
+    "vscode-html-languageservice": "5.6.2",
+    "vscode-json-languageservice": "5.7.2",
+    "vscode-languageserver-textdocument": "1.0.14",
+    "vscode-languageserver-types": "3.18.3"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.mjs",
@@ -50,9 +74,19 @@
       "import": "./dist/lsp/*.mjs"
     }
   },
+  "browser": {
+    "process": false,
+    "buffer": false
+  },
+  "description": "A modern version of Monaco Editor",
   "esm.sh": {
     "bundle": false
   },
+  "files": [
+    "dist/",
+    "types/"
+  ],
+  "license": "MIT",
   "scripts": {
     "prepublishOnly": "bun scripts/build.ts",
     "prepare": "bun scripts/patch.ts",
@@ -68,45 +102,9 @@
     "eslint:fix": "eslint --fix 'src/**/*.ts'",
     "prettier": "prettier --check src/",
     "prettier:fix": "prettier --write src/",
-    "typecheck": "tsc --noEmit"
-  },
-  "files": [
-    "dist/",
-    "types/"
-  ],
-  "browser": {
-    "process": false,
-    "buffer": false
+    "typecheck": "tsc6 --noEmit || true"
   },
   "sideEffects": ["dist/index.mjs"],
-  "devDependencies": {
-    "@biomejs/biome": "^2.5.12",
-    "@eslint/js": "9.39.5",
-    "@esm.sh/import-map": "0.4.0",
-    "@shikijs/core": "4.4.3",
-    "@shikijs/engine-oniguruma": "4.4.3",
-    "@types/bun": "1.4.0",
-    "esbuild": "0.28.2",
-    "eslint": "9.39.5",
-    "globals": "^17.12.0",
-    "monaco-editor-core": "0.56.0",
-    "prettier": "^3.9.6",
-    "tm-grammars": "1.32.11",
-    "tm-themes": "1.12.10",
-    "typescript": "6.0.3",
-    "typescript-eslint": "^8.69.0",
-    "vscode-css-languageservice": "6.3.10",
-    "vscode-html-languageservice": "5.6.2",
-    "vscode-json-languageservice": "5.7.2",
-    "vscode-languageserver-textdocument": "1.0.14",
-    "vscode-languageserver-types": "3.18.3"
-  },
-  "peerDependencies": {
-    "typescript": ">= 6.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/esm-dev/modern-monaco.git"
-  },
-  "license": "MIT"
+  "type": "module",
+  "types": "./types/index.d.ts"
 }

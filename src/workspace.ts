@@ -171,12 +171,12 @@ export class Workspace implements IWorkspace {
     return model;
   }
 
-  async showInputBox(options: monacoNS.InputBoxOptions, token: monacoNS.CancellationToken) {
+  async showInputBox(options: monacoNS.InputBoxOptions, token?: monacoNS.CancellationToken) {
     const monaco = await this._monaco.promise;
     return monaco.showInputBox(options, token);
   }
 
-  async showQuickPick(items: any, options: any, token: monacoNS.CancellationToken) {
+  async showQuickPick(items: any, options: any, token?: monacoNS.CancellationToken) {
     const monaco = await this._monaco.promise;
     return monaco.showQuickPick(items, options, token) as any;
   }

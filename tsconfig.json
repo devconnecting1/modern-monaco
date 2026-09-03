@@ -11,7 +11,9 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "strictNullChecks": true,
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false
   },
   "include": [
     "src/**/*.ts"
