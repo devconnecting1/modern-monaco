@@ -1,12 +1,11 @@
 import type monacoNS from "monaco-editor-core";
-import type { FormattingOptions } from "vscode-languageserver-types";
 import type { HTMLDataV1 } from "vscode-html-languageservice";
-import type { Workspace } from "~/workspace.ts";
+import type { FormattingOptions } from "vscode-languageserver-types";
 import type { DiagnosticsOptions } from "~/lsp/client.ts";
-import type { CreateData, HTMLWorker } from "./worker.ts";
-
+import type { Workspace } from "~/workspace.ts";
 // ! external modules, don't remove the `.js` extension
 import * as client from "../client.js";
+import type { CreateData, HTMLWorker } from "./worker.ts";
 
 interface HTMLLanguageSettings {
   useDefaultDataProvider?: boolean;
@@ -24,7 +23,7 @@ export async function setup(
   languageId: string,
   languageSettings?: HTMLLanguageSettings,
   formattingOptions?: FormattingOptions,
-  workspace?: Workspace
+  workspace?: Workspace,
 ) {
   const { editor, languages } = monaco;
   const { tabSize, insertSpaces, insertFinalNewline, trimFinalNewlines } = formattingOptions ?? {};
@@ -77,7 +76,7 @@ export async function setup(
     workerWithEmbeddedLanguages,
     ["<", "/", "=", '"'],
     workspace,
-    languageSettings?.diagnosticsOptions
+    languageSettings?.diagnosticsOptions,
   );
   client.registerAutoComplete(languageId, workerWithEmbeddedLanguages, [">", "/", "="]);
   client.registerColorPresentation(languageId, workerWithEmbeddedLanguages); // css color presentation

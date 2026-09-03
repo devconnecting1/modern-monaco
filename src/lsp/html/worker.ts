@@ -1,10 +1,9 @@
 import type monacoNS from "monaco-editor-core";
 import * as htmlService from "vscode-html-languageservice";
-import { getDocumentRegions } from "./embedded-support.ts";
-import { WorkerBase, type WorkerCreateData } from "../worker-base.ts";
-
 // ! external modules, don't remove the `.js` extension
 import { initializeWorker } from "../../editor-worker.js";
+import { WorkerBase, type WorkerCreateData } from "../worker-base.ts";
+import { getDocumentRegions } from "./embedded-support.ts";
 
 export interface HTMLDataConfiguration {
   /**  Defines whether the standard CSS properties, at-directives, pseudoClasses and pseudoElements are shown. */
@@ -22,7 +21,7 @@ export interface CreateData extends WorkerCreateData {
   readonly data?: HTMLDataConfiguration;
 }
 
-export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
+export class HTMLWorker extends WorkerBase<Record<string, unknown>, htmlService.HTMLDocument> {
   private _formatSettings: htmlService.HTMLFormatConfiguration;
   private _suggestSettings: htmlService.CompletionConfiguration;
   private _languageService: htmlService.LanguageService;
@@ -51,29 +50,31 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     const diagnostic: htmlService.Diagnostic[] = [];
     const rs = getDocumentRegions(this._languageService, document);
     if (rs.hasEmbeddedLanguage("importmap")) {
-      const imr = rs.regions.find((region) => region.languageId === "importmap")!;
-      const addDiagnostic = (r: { start: number; end: number }) =>
-        diagnostic.push({
-          severity: 1, // Error
-          range: {
-            start: document.positionAt(r.start),
-            end: document.positionAt(r.end),
-          },
-          message: "Scripts are not allowed before the import map.",
-          source: "html",
-        });
-      for (const script of rs.importedScripts) {
-        if (script.end < imr.start) {
-          addDiagnostic(script);
-        } else {
-          break;
+      const imr = rs.regions.find((region) => region.languageId === "importmap");
+      if (imr) {
+        const addDiagnostic = (r: { start: number; end: number }) =>
+          diagnostic.push({
+            severity: 1, // Error
+            range: {
+              start: document.positionAt(r.start),
+              end: document.positionAt(r.end),
+            },
+            message: "Scripts are not allowed before the import map.",
+            source: "html",
+          });
+        for (const script of rs.importedScripts) {
+          if (script.end < imr.start) {
+            addDiagnostic(script);
+          } else {
+            break;
+          }
         }
-      }
-      for (const r of rs.regions) {
-        if (r.languageId === "javascript" && r.end < imr.start) {
-          addDiagnostic(r);
-        } else {
-          break;
+        for (const r of rs.regions) {
+          if (r.languageId === "javascript" && r.end < imr.start) {
+            addDiagnostic(r);
+          } else {
+            break;
+          }
         }
       }
     }
@@ -84,7 +85,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
           languageIds: rsls,
           origin: diagnostic,
         },
-      } as any;
+      } as htmlService.Diagnostic[];
     }
     return diagnostic;
   }
@@ -115,7 +116,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     const rs = getDocumentRegions(this._languageService, document);
     const rsl = rs.getEmbeddedLanguageAtPosition(position);
     if (rsl) {
-      return { $embedded: rsl } as any;
+      return { $embedded: rsl } as htmlService.CompletionList;
     }
     const htmlDocument = this.getLanguageDocument(document);
     return this._languageService.doComplete2(document, position, htmlDocument, this, this._suggestSettings);
@@ -129,7 +130,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     const rs = getDocumentRegions(this._languageService, document);
     const rsl = rs.getEmbeddedLanguageAtPosition(position);
     if (rsl) {
-      return { $embedded: rsl } as any;
+      return { $embedded: rsl } as htmlService.Hover;
     }
     const htmlDocument = this.getLanguageDocument(document);
     return this._languageService.doHover(document, position, htmlDocument);
@@ -138,7 +139,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
   async doFormat(
     uri: string,
     formatRange: htmlService.Range,
-    options: htmlService.FormattingOptions
+    options: htmlService.FormattingOptions,
   ): Promise<htmlService.TextEdit[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
@@ -152,7 +153,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
       // remove last newline to allow embedded css to be formatted with newline
       endWithNewline: false,
       // unformat `<script>` tag
-      contentUnformatted: contentUnformatted + ", script",
+      contentUnformatted: `${contentUnformatted}, script`,
     };
     const edits = this._languageService.format(document, formatRange, formattingOptions);
 
@@ -181,7 +182,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     const rs = getDocumentRegions(this._languageService, document);
     const rsl = rs.getEmbeddedLanguageAtPosition(position);
     if (rsl) {
-      return { $embedded: rsl } as any;
+      return { $embedded: rsl } as htmlService.WorkspaceEdit;
     }
     const htmlDocument = this.getLanguageDocument(document);
     return this._languageService.doRename(document, position, newName, htmlDocument);
@@ -189,7 +190,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
 
   async findDefinition(
     uri: string,
-    position: htmlService.Position
+    position: htmlService.Position,
   ): Promise<(htmlService.Location & { originSelectionRange?: htmlService.Range })[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
@@ -198,7 +199,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     const rs = getDocumentRegions(this._languageService, document);
     const rsl = rs.getEmbeddedLanguageAtPosition(position);
     if (rsl) {
-      return { $embedded: rsl } as any;
+      return { $embedded: rsl } as (htmlService.Location & { originSelectionRange?: htmlService.Range })[];
     }
     return null;
   }
@@ -211,7 +212,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     const rs = getDocumentRegions(this._languageService, document);
     const rsl = rs.getEmbeddedLanguageAtPosition(position);
     if (rsl) {
-      return { $embedded: rsl } as any;
+      return { $embedded: rsl } as htmlService.Location[];
     }
     return null;
   }
@@ -241,7 +242,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     const rs = getDocumentRegions(this._languageService, document);
     const rsl = rs.getEmbeddedLanguageAtPosition(position);
     if (rsl) {
-      return { $embedded: rsl } as any;
+      return { $embedded: rsl } as htmlService.DocumentHighlight[];
     }
     const htmlDocument = this.getLanguageDocument(document);
     return this._languageService.findDocumentHighlights(document, position, htmlDocument);
@@ -261,7 +262,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
           languageIds: rsls,
           origin: ranges,
         },
-      } as any;
+      } as htmlService.FoldingRange[];
     }
     return ranges;
   }
@@ -281,15 +282,15 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     }
     const rs = getDocumentRegions(this._languageService, document);
     if (rs.hasEmbeddedLanguage("css")) {
-      return { $embedded: "css" } as any;
+      return { $embedded: "css" } as htmlService.ColorInformation[];
     }
     return null;
   }
 
   async getColorPresentations(
     uri: string,
-    color: htmlService.Color,
-    range: htmlService.Range
+    _color: htmlService.Color,
+    _range: htmlService.Range,
   ): Promise<htmlService.ColorPresentation[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
@@ -297,7 +298,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     }
     const rs = getDocumentRegions(this._languageService, document);
     if (rs.hasEmbeddedLanguage("css")) {
-      return { $embedded: "css" } as any;
+      return { $embedded: "css" } as htmlService.ColorPresentation[];
     }
     return null;
   }

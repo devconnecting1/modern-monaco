@@ -1,10 +1,9 @@
 import type monacoNS from "monaco-editor-core";
 import * as jsonService from "vscode-json-languageservice";
-import { WorkerBase, type WorkerCreateData } from "../worker-base.ts";
-
 // ! external modules, don't remove the `.js` extension
 import { cache } from "../../cache.js";
 import { initializeWorker } from "../../editor-worker.js";
+import { WorkerBase, type WorkerCreateData } from "../worker-base.ts";
 
 /** The create data for a new json worker. */
 export interface CreateData extends WorkerCreateData {
@@ -14,7 +13,7 @@ export interface CreateData extends WorkerCreateData {
   readonly format?: jsonService.FormattingOptions;
 }
 
-export class JSONWorker extends WorkerBase<{}, jsonService.JSONDocument> {
+export class JSONWorker extends WorkerBase<Record<string, unknown>, jsonService.JSONDocument> {
   private _formatSettings?: jsonService.FormattingOptions;
   private _languageService: jsonService.LanguageService;
 
@@ -78,7 +77,7 @@ export class JSONWorker extends WorkerBase<{}, jsonService.JSONDocument> {
     return this._languageService.doHover(document, position, jsonDocument);
   }
 
-  async doRename(uri: string, position: jsonService.Position, newName: string): Promise<jsonService.WorkspaceEdit | null> {
+  async doRename(_uri: string, _position: jsonService.Position, _newName: string): Promise<jsonService.WorkspaceEdit | null> {
     return null;
   }
 
@@ -86,14 +85,14 @@ export class JSONWorker extends WorkerBase<{}, jsonService.JSONDocument> {
     uri: string,
     range: jsonService.Range | null,
     options: jsonService.FormattingOptions,
-    docText?: string
+    docText?: string,
   ): Promise<jsonService.TextEdit[] | null> {
     const document = docText ? jsonService.TextDocument.create(uri, "json", 0, docText) : this.getTextDocument(uri);
     if (!document) {
       return null;
     }
     const settings = { ...this._formatSettings, ...options };
-    return this._languageService.format(document, range!, settings);
+    return this._languageService.format(document, range ?? { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }, settings);
   }
 
   async findDocumentSymbols(uri: string): Promise<jsonService.DocumentSymbol[] | null> {
@@ -118,7 +117,7 @@ export class JSONWorker extends WorkerBase<{}, jsonService.JSONDocument> {
     return null;
   }
 
-  async findReferences(uri: string, position: jsonService.Position): Promise<jsonService.Location[] | null> {
+  async findReferences(_uri: string, _position: jsonService.Position): Promise<jsonService.Location[] | null> {
     return null;
   }
 
@@ -131,7 +130,7 @@ export class JSONWorker extends WorkerBase<{}, jsonService.JSONDocument> {
     return this._languageService.findLinks(document, jsonDocument);
   }
 
-  async findDocumentHighlights(uri: string, position: jsonService.Position): Promise<jsonService.DocumentHighlight[] | null> {
+  async findDocumentHighlights(_uri: string, _position: jsonService.Position): Promise<jsonService.DocumentHighlight[] | null> {
     return null;
   }
 
@@ -147,7 +146,7 @@ export class JSONWorker extends WorkerBase<{}, jsonService.JSONDocument> {
   async getColorPresentations(
     uri: string,
     color: jsonService.Color,
-    range: jsonService.Range
+    range: jsonService.Range,
   ): Promise<jsonService.ColorPresentation[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {

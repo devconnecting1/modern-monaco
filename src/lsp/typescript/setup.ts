@@ -1,14 +1,13 @@
+import { ImportMap, type ImportMapRaw, parseFromHtml } from "@esm.sh/import-map";
 import type monacoNS from "monaco-editor-core";
 import type ts from "typescript";
 import type { FormattingOptions } from "vscode-languageserver-types";
-import type { Workspace } from "~/workspace";
 import type { DiagnosticsOptions } from "~/lsp/client.ts";
-import type { CreateData, Host, TypeScriptWorker, VersionedContent } from "./worker";
-import { ImportMap, type ImportMapRaw, parseFromHtml } from "@esm.sh/import-map";
-
+import type { Workspace } from "~/workspace";
 // ! external modules, don't remove the `.js` extension
 import { cache } from "../../cache.js";
 import * as client from "../client.js";
+import type { CreateData, Host, TypeScriptWorker, VersionedContent } from "./worker";
 
 type TSWorker = monacoNS.editor.MonacoWebWorker<TypeScriptWorker>;
 type CompilerOptions = { [key: string]: ts.CompilerOptionsValue };
@@ -26,7 +25,7 @@ export async function setup(
   languageId: string,
   languageSettings?: TypeScriptLanguageSettings,
   formattingOptions?: FormattingOptions & { semicolon?: "ignore" | "insert" | "remove" },
-  workspace?: Workspace
+  workspace?: Workspace,
 ) {
   if (!worker) {
     worker = createWorker(monaco, workspace, languageSettings, formattingOptions);
@@ -55,7 +54,7 @@ async function createWorker(
   monaco: typeof monacoNS,
   workspace?: Workspace,
   languageSettings?: TypeScriptLanguageSettings,
-  formattingOptions?: FormattingOptions & { semicolon?: "ignore" | "insert" | "remove" }
+  formattingOptions?: FormattingOptions & { semicolon?: "ignore" | "insert" | "remove" },
 ) {
   const fs = workspace?.fs;
   const defaultCompilerOptions: CompilerOptions = {
@@ -146,7 +145,7 @@ async function createWorker(
       },
       refreshDiagnostics: async (uri: string) => {
         let model = monaco.editor.getModel(uri);
-        if (model && model.uri.path.includes(".(embedded).")) {
+        if (model?.uri.path.includes(".(embedded).")) {
           model = monaco.editor.getModel(model.uri.toString(true).split(".(embedded).")[0]);
         }
         if (model) {
@@ -179,12 +178,12 @@ async function createWorker(
               typesStore.add(content, url);
             }
             updateCompilerOptions({ types: typesStore.types });
-          })
+          }),
         );
     let unwatchTypeFiles = watchTypeFiles();
 
     fs.watch("tsconfig.json", () => {
-      unwatchTypeFiles.forEach((dispose) => dispose());
+      unwatchTypeFiles.forEach((dispose) => { dispose(); });
       loadCompilerOptions(workspace).then((options) => {
         const newOptions = { ...defaultCompilerOptions, ...options };
         if (JSON.stringify(newOptions) !== JSON.stringify(compilerOptions)) {
@@ -295,23 +294,23 @@ class TypesSet {
               if (res2.ok) {
                 return [dtsUrl, await res2.text()];
               } else {
-                console.error(`Failed to fetch "${dtsUrl}": ` + (await res2.text()));
+                console.error(`Failed to fetch "${dtsUrl}": ${await res2.text()}`);
               }
             } else if (res.ok) {
               return [type, await res.text()];
             } else {
-              console.error(`Failed to fetch "${dtsUrl}": ` + (await res.text()));
+              console.error(`Failed to fetch "${dtsUrl}": ${await res.text()}`);
             }
           } else if (typeof type === "string" && workspace) {
-            const dtsUrl = new URL(type.replace(/\.d\.ts$/, "") + ".d.ts", "file:///").href;
+            const dtsUrl = new URL(`${type.replace(/\.d\.ts$/, "")}.d.ts`, "file:///").href;
             try {
               return [dtsUrl, await workspace.fs.readTextFile(dtsUrl)];
             } catch (error) {
-              console.error(`Failed to read "${dtsUrl}": ` + error.message);
+              console.error(`Failed to read "${dtsUrl}": ${error.message}`);
             }
           }
           return null;
-        })
+        }),
       ).then((e) => {
         const entries = e.filter(Boolean) as [string, string][];
         if (workspace) {
@@ -407,7 +406,7 @@ function isBlankImportMap(im: ImportMapRaw) {
 
 /** Check if the error is a fs not found error. */
 function isFsNotFoundError(error: unknown): error is Error {
-  return error instanceof Error && (error as any).FS_ERROR === "NOT_FOUND";
+  return error instanceof Error && (error as Record<string, unknown>).FS_ERROR === "NOT_FOUND";
 }
 
 /**
@@ -420,8 +419,8 @@ function parseJsonc(text: string) {
     return JSON.parse(text);
   } catch {
     // Slow path for JSONC and invalid inputs
-    const stringOrCommentRe = /("(?:\\?[^])*?")|(\/\/.*)|(\/\*[^]*?\*\/)/g;
-    const stringOrTrailingCommaRe = /("(?:\\?[^])*?")|(,\s*)(?=]|})/g;
+    const stringOrCommentRe = /("(?:\\?[\s\S])*?")|(\/\/.*)|(\/\*[\s\S]*?\*\/)/g;
+    const stringOrTrailingCommaRe = /("(?:\\?[\s\S])*?")|(,\s*)(?=]|})/g;
     const fixed = text.replace(stringOrCommentRe, "$1").replace(stringOrTrailingCommaRe, "$1");
     return JSON.parse(fixed);
   }

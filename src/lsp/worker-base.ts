@@ -1,6 +1,6 @@
 import type monacoNS from "monaco-editor-core";
-import type { FileSystemEntryType } from "../../types/workspace.d.ts";
 import { TextDocument } from "vscode-languageserver-textdocument";
+import type { FileSystemEntryType } from "../../types/workspace.d.ts";
 
 export interface WorkerCreateData {
   fs?: string[];
@@ -15,7 +15,7 @@ export class WorkerBase<Host = undefined, LanguageDocument = undefined> {
   constructor(
     ctx: monacoNS.worker.IWorkerContext<Host>,
     createData: WorkerCreateData,
-    createLanguageDocument?: (document: TextDocument) => LanguageDocument
+    createLanguageDocument?: (document: TextDocument) => LanguageDocument,
   ) {
     this.#ctx = ctx;
     if (createData.fs) {
@@ -26,11 +26,11 @@ export class WorkerBase<Host = undefined, LanguageDocument = undefined> {
           if (dir) {
             dirs.add(dir);
           }
-          return ["file://" + path, 1];
-        })
+          return [`file://${path}`, 1];
+        }),
       );
       for (const dir of dirs) {
-        this.#fs.set("file://" + dir, 2);
+        this.#fs.set(`file://${dir}`, 2);
       }
       createData.fs.length = 0;
     }
@@ -131,7 +131,7 @@ export class WorkerBase<Host = undefined, LanguageDocument = undefined> {
           // @ts-expect-error `fs_stat` is defined in host
           return host.fs_stat(uri);
         },
-        getContent: (uri: string, encoding?: string): Promise<string> => {
+        getContent: (uri: string, _encoding?: string): Promise<string> => {
           // @ts-expect-error `fs_getContent` is defined in host
           return host.fs_getContent(uri);
         },
@@ -157,7 +157,10 @@ export class WorkerBase<Host = undefined, LanguageDocument = undefined> {
   }
 
   async fsNotify(kind: "create" | "remove", path: string, type?: number): Promise<void> {
-    const fs = this.#fs ?? (this.#fs = new Map());
+    if (!this.#fs) {
+      this.#fs = new Map();
+    }
+    const fs = this.#fs;
     if (kind === "create") {
       if (type) {
         fs.set(path, type);

@@ -1,11 +1,10 @@
 import type monacoNS from "monaco-editor-core";
 import type { FormattingOptions } from "vscode-languageserver-types";
-import type { Workspace } from "~/workspace.ts";
 import type { DiagnosticsOptions } from "~/lsp/client.ts";
-import type { CreateData, CSSLanguageServiceOptions, CSSWorker } from "./worker.ts";
-
+import type { Workspace } from "~/workspace.ts";
 // ! external modules, don't remove the `.js` extension
 import * as client from "../client.js";
+import type { CreateData, CSSLanguageServiceOptions, CSSWorker } from "./worker.ts";
 
 interface CSSLanguageSettings extends CSSLanguageServiceOptions {
   validProperties?: string[];
@@ -17,7 +16,7 @@ export async function setup(
   languageId: string,
   languageSettings?: CSSLanguageSettings,
   formattingOptions?: FormattingOptions,
-  workspace?: Workspace
+  workspace?: Workspace,
 ) {
   const validProperties = languageSettings?.validProperties;
   const dataProviders = { ...languageSettings?.dataProviders };

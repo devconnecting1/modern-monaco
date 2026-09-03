@@ -1,7 +1,7 @@
-import type monacoNS from "monaco-editor-core";
-import type * as lst from "vscode-languageserver-types";
 import { ImportMap, type ImportMapRaw } from "@esm.sh/import-map";
+import type monacoNS from "monaco-editor-core";
 import ts from "typescript";
+import type * as lst from "vscode-languageserver-types";
 import {
   CompletionItemKind,
   CompletionItemTag,
@@ -13,13 +13,12 @@ import {
   SelectionRange,
   SymbolKind,
 } from "vscode-languageserver-types";
+import { cache } from "../../cache.js";
+import { initializeWorker } from "../../editor-worker.js";
 import { TextDocument, WorkerBase, type WorkerCreateData } from "../worker-base.ts";
-
 // ! external modules, don't remove the `.js` extension
 // @ts-expect-error 'libs.js' is generated at build time
 import libs from "./libs.js";
-import { cache } from "../../cache.js";
-import { initializeWorker } from "../../editor-worker.js";
 
 export interface Host {
   openModel(uri: string): Promise<boolean>;
@@ -45,8 +44,8 @@ export interface DiagnosticRelatedInformation extends Omit<ts.DiagnosticRelatedI
 
 /** May store more in future. For now, this will simply be `true` to indicate when a diagnostic is an unused-identifier diagnostic. */
 export interface Diagnostic extends DiagnosticRelatedInformation {
-  reportsUnnecessary?: {};
-  reportsDeprecated?: {};
+  reportsUnnecessary?: Record<string, unknown>;
+  reportsDeprecated?: Record<string, unknown>;
   source?: string;
   relatedInformation?: DiagnosticRelatedInformation[];
 }
@@ -108,9 +107,9 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
   readDirectory(
     path: string,
     extensions?: readonly string[],
-    exclude?: readonly string[],
-    include?: readonly string[],
-    depth?: number
+    _exclude?: readonly string[],
+    _include?: readonly string[],
+    _depth?: number,
   ): string[] {
     if (path.startsWith("file:///node_modules/")) {
       // todo: use closest index.html(importmap)
@@ -147,7 +146,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     const types = Object.keys(this.#types);
     const libNames = Object.keys(libs);
     const filenames = new Array<string>(
-      models.length + types.length + libNames.length + this.#httpLibs.size + this.#httpModules.size + this.#httpTsModules.size
+      models.length + types.length + libNames.length + this.#httpLibs.size + this.#httpModules.size + this.#httpTsModules.size,
     );
     let i = 0;
     for (const model of models) {
@@ -187,7 +186,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     const model = this.getModel(fileName);
     if (model) {
       // change on import map will affect all models
-      return this.#importMapVersion + "." + model.version;
+      return `${this.#importMapVersion}.${model.version}`;
     }
     // unknown file
     return "0";
@@ -235,7 +234,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     _redirectedReference: ts.ResolvedProjectReference | undefined,
     _options: ts.CompilerOptions,
     _containingSourceFile: ts.SourceFile,
-    _reusedNames: readonly ts.StringLiteralLike[] | undefined
+    _reusedNames: readonly ts.StringLiteralLike[] | undefined,
   ): readonly ts.ResolvedModuleWithFailedLookupLocations[] {
     this.#redirectedImports = this.#redirectedImports.filter(([modelUrl]) => modelUrl !== containingFile);
     return moduleLiterals
@@ -253,7 +252,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
         let moduleUrl: URL;
         try {
           moduleUrl = new URL(specifier, pathToUrl(containingFile));
-        } catch (error) {
+        } catch (_error) {
           return undefined;
         }
         if (getScriptExtension(moduleUrl.pathname) === null) {
@@ -301,7 +300,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
                 .finally(() => {
                   this.#openPromises.delete(moduleHref);
                   this.host.refreshDiagnostics(containingFile);
-                })
+                }),
             );
           }
         } else {
@@ -310,7 +309,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
             return undefined;
           }
           if (!importMapResolved && this.#urlMappings.has(moduleHref)) {
-            const redirectUrl = this.#urlMappings.get(moduleHref)!;
+            const redirectUrl = this.#urlMappings.get(moduleHref) ?? "";
             this.#redirectedImports.push([containingFile, literal, redirectUrl]);
           }
           if (this.#httpModules.has(moduleHref)) {
@@ -327,7 +326,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
           }
           if (this.#typesMappings.has(moduleHref)) {
             return {
-              resolvedFileName: this.#typesMappings.get(moduleHref)!,
+              resolvedFileName: this.#typesMappings.get(moduleHref) ?? "",
               extension: ".d.ts",
             };
           }
@@ -338,7 +337,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
             };
           }
           if (!this.#fetchPromises.has(moduleHref)) {
-            const isJsxRuntimeUrl = this.#compilerOptions.jsxImportSource === moduleHref + "/jsx-runtime";
+            const isJsxRuntimeUrl = this.#compilerOptions.jsxImportSource === `${moduleHref}/jsx-runtime`;
             const autoFetch = importMapResolved || isJsxRuntimeUrl || isHttpUrl(containingFile) || isWellKnownCDNURL(moduleUrl);
             // if `autoFetch` is true, fetch the module from the network automatically, otherwise query the cache.
             const promise = autoFetch ? cache.fetch(moduleUrl) : cache.query(moduleUrl);
@@ -383,7 +382,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
                       const [pkgName, pkgVersion, target, subPath] = esmModulePath;
                       const metaUrl = new URL(`/${pkgName}@${pkgVersion}?meta&target=${target}`, moduleUrl);
                       if (subPath) {
-                        metaUrl.pathname += "/" + subPath;
+                        metaUrl.pathname += `/${subPath}`;
                       }
                       const metaRes = await cache.fetch(metaUrl);
                       if (metaRes.ok) {
@@ -426,7 +425,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
                   this.#rollbackVersion(containingFile);
                   this.#fetchPromises.delete(moduleHref);
                   this.host.refreshDiagnostics(containingFile);
-                })
+                }),
             );
           }
         }
@@ -471,7 +470,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
               code: 7000,
               category: ts.DiagnosticCategory.Message,
               messageText: `The module was redirected to ${url}`,
-            })
+            }),
           );
         }
       });
@@ -479,14 +478,14 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     return diagnostics;
   }
 
-  async doAutoComplete(uri: string, position: lst.Position, ch: string): Promise<string | null> {
+  async doAutoComplete(uri: string, position: lst.Position, _ch: string): Promise<string | null> {
     const document = this.#getTextDocument(uri);
     if (!document) {
       return null;
     }
     const info = this.#languageService.getJsxClosingTagAtPosition(uri, document.offsetAt(position));
     if (info) {
-      return "$0" + info.newText;
+      return `$0${info.newText}`;
     }
     return null;
   }
@@ -507,7 +506,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
         continue;
       }
       // drop import completions that are in the import map for '.' and '..' imports
-      if ((entry.kind === "script" && entry.name in this.#importMap.imports) || entry.name + "/" in this.#importMap.imports) {
+      if ((entry.kind === "script" && entry.name in this.#importMap.imports) || `${entry.name}/` in this.#importMap.imports) {
         const { replacementSpan } = entry;
         if (replacementSpan?.length) {
           const replacementText = document.getText({
@@ -558,16 +557,16 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     const documentation = ts.displayPartsToString(details.documentation);
     const additionalTextEdits: lst.TextEdit[] = [];
     if (details.codeActions) {
-      details.codeActions.forEach((action) =>
-        action.changes.forEach((change) =>
+      details.codeActions.forEach((action) => {
+        action.changes.forEach((change) => {
           change.textChanges.forEach(({ span, newText }) => {
             additionalTextEdits.push({
               range: createRangeFromDocumentSpan(document, span),
               newText,
             });
-          })
-        )
-      );
+          });
+        });
+      });
     }
     return { label: item.label, detail, documentation, additionalTextEdits };
   }
@@ -585,7 +584,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
       const tags = info.tags?.map((tag) => tagStringify(tag)).join("  \n\n") ?? null;
       return {
         range: createRangeFromDocumentSpan(document, info.textSpan),
-        contents: [{ language: "typescript", value: contents }, documentation + (tags ? "\n\n" + tags : "")],
+        contents: [{ language: "typescript", value: contents }, documentation + (tags ? `\n\n${tags}` : "")],
       };
     }
     return null;
@@ -594,7 +593,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
   async doSignatureHelp(
     uri: string,
     position: number,
-    context: monacoNS.languages.SignatureHelpContext
+    context: monacoNS.languages.SignatureHelpContext,
   ): Promise<lst.SignatureHelp | null> {
     const triggerReason = toTsSignatureHelpTriggerReason(context);
     const items = this.#languageService.getSignatureHelpItems(uri, position, { triggerReason });
@@ -634,7 +633,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     uri: string,
     range: lst.Range,
     context: lst.CodeActionContext,
-    formatOptions: lst.FormattingOptions
+    formatOptions: lst.FormattingOptions,
   ): Promise<lst.CodeAction[] | null> {
     const document = this.#getTextDocument(uri);
     if (!document) {
@@ -662,7 +661,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
         action.edit = { changes: { [uri]: edits } };
       }
       if (codeFix.commands?.length) {
-        const command: any = codeFix.commands[0];
+        const command = codeFix.commands[0] as { title: string; id: string; arguments?: unknown[] };
         action.command = {
           title: command.title,
           command: command.id,
@@ -691,8 +690,11 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
       return null;
     }
     const changes: Record<string, lst.TextEdit[]> = {};
-    locations.map((loc) => {
-      const edits = changes[loc.fileName] || (changes[loc.fileName] = []);
+    locations.forEach((loc) => {
+      if (!changes[loc.fileName]) {
+        changes[loc.fileName] = [];
+      }
+      const edits = changes[loc.fileName];
       const locDocument = this.#getTextDocument(loc.fileName);
       if (locDocument) {
         edits.push({
@@ -708,7 +710,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     uri: string,
     range: lst.Range | null,
     formatOptions: lst.FormattingOptions,
-    docText?: string
+    docText?: string,
   ): Promise<lst.TextEdit[] | null> {
     const document = docText ? TextDocument.create(uri, "typescript", 0, docText) : this.#getTextDocument(uri);
     if (!document) {
@@ -860,9 +862,10 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     if (!document) {
       return null;
     }
+    const doc = document;
     function convertSelectionRange(selectionRange: ts.SelectionRange): lst.SelectionRange {
       const parent = selectionRange.parent ? convertSelectionRange(selectionRange.parent) : undefined;
-      return SelectionRange.create(createRangeFromDocumentSpan(document!, selectionRange.textSpan), parent);
+      return SelectionRange.create(createRangeFromDocumentSpan(doc, selectionRange.textSpan), parent);
     }
     return positions.map((position) => {
       const range = this.#languageService.getSmartSelectionRange(uri, document.offsetAt(position));
@@ -932,17 +935,17 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
       const autoImports = new Set<string>();
       completions.entries = completions.entries.filter((entry) => {
         const { data } = entry;
-        if (!data || !data.fileName || !isDts(data.fileName)) {
+        if (!data?.fileName || !isDts(data.fileName)) {
           return true;
         }
         const { moduleSpecifier, exportName } = data;
         if (moduleSpecifier && (moduleSpecifier in this.#importMap.imports || this.#typesMappings.has(moduleSpecifier))) {
-          autoImports.add(exportName + " " + moduleSpecifier);
+          autoImports.add(`${exportName} ${moduleSpecifier}`);
           return true;
         }
         const specifier = this.#getSpecifierFromDts(data.fileName);
-        if (specifier && !autoImports.has(exportName + " " + specifier)) {
-          autoImports.add(exportName + " " + specifier);
+        if (specifier && !autoImports.has(`${exportName} ${specifier}`)) {
+          autoImports.add(`${exportName} ${specifier}`);
           return true;
         }
         return false;
@@ -956,7 +959,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     fileName: string,
     position: number,
     entryName: string,
-    data?: ts.CompletionEntryData
+    data?: ts.CompletionEntryData,
   ): ts.CompletionEntryDetails | undefined {
     try {
       const detail = this.#languageService.getCompletionEntryDetails(
@@ -969,13 +972,13 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
         },
         undefined,
         undefined,
-        data
+        data,
       );
       // fix the url of auto import suggestions from a types module
       detail?.codeActions?.forEach((action) => {
         if (action.description.startsWith("Add import from ")) {
           const specifier = action.description.slice(17, -1);
-          const newSpecifier = this.#getSpecifierFromDts(isDts(specifier) ? specifier : specifier + ".d.ts");
+          const newSpecifier = this.#getSpecifierFromDts(isDts(specifier) ? specifier : `${specifier}.d.ts`);
           if (newSpecifier) {
             action.description = `Add type import from "${newSpecifier}"`;
             action.changes.forEach((change) => {
@@ -987,7 +990,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
         }
       });
       return detail;
-    } catch (error) {
+    } catch (_error) {
       return;
     }
   }
@@ -1010,8 +1013,8 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
         if (literalText) {
           try {
             const specifier = JSON.parse(literalText);
-            displayParts[2].text = '"' + new URL(specifier, fileName).pathname + '"';
-          } catch (error) {
+            displayParts[2].text = `"${new URL(specifier, fileName).pathname}"`;
+          } catch (_error) {
             // ignore
           }
         }
@@ -1022,8 +1025,8 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
       ) {
         const specifier = JSON.parse(moduleName);
         for (const [url, dts] of this.#typesMappings) {
-          if (specifier + ".d.ts" === dts) {
-            displayParts[2].text = '"' + url + '"';
+          if (`${specifier}.d.ts` === dts) {
+            displayParts[2].text = `"${url}"`;
             info.tags = [
               {
                 name: "types",
@@ -1065,7 +1068,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     start: number,
     end: number,
     errorCodes: number[],
-    formatOptions: ts.FormatCodeSettings
+    formatOptions: ts.FormatCodeSettings,
   ): Promise<ts.CodeFixAction[]> {
     let span = [start + 1, end - 1] as [number, number];
     // fix url/path span
@@ -1143,10 +1146,10 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
         end,
         errorCodes,
         this.#mergeFormatOptions(formatOptions),
-        {}
+        {},
       );
       return fixes.concat(tsFixes);
-    } catch (err) {
+    } catch (_err) {
       return fixes;
     }
   }
@@ -1180,7 +1183,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
     if (uri.startsWith("http://") || uri.startsWith("https://")) {
       const docCache = this.#httpDocumentCache;
       if (docCache.has(uri)) {
-        return docCache.get(uri)!;
+        return docCache.get(uri) ?? null;
       }
       const scriptText = this.#getScriptText(uri);
       if (scriptText) {
@@ -1217,14 +1220,14 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
               })
               .finally(() => {
                 this.#fetchPromises.delete(refUrl);
-              })
+              }),
           );
         }
       });
     });
   }
 
-  #getSpecifierFromDts(filename: string): string | void {
+  #getSpecifierFromDts(filename: string): string | undefined {
     for (const [specifier, dts] of this.#typesMappings) {
       if (filename === dts) {
         for (const [key, value] of Object.entries(this.#importMap.imports)) {
@@ -1258,7 +1261,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
 
   #convertRelatedInformation(
     document: TextDocument,
-    relatedInformation?: ts.DiagnosticRelatedInformation[]
+    relatedInformation?: ts.DiagnosticRelatedInformation[],
   ): lst.DiagnosticRelatedInformation[] {
     if (!relatedInformation) {
       return [];
@@ -1294,7 +1297,7 @@ export class TypeScriptWorker extends WorkerBase<Host> implements ts.LanguageSer
       }
     }
     for (const key of ["react", "preact", "solid-js", "mono-jsx/dom", "mono-jsx"]) {
-      if (key + "/" in imports) {
+      if (`${key}/` in imports) {
         return key;
       }
     }
@@ -1408,7 +1411,7 @@ function parseEsmModulePath({ protocol, pathname }: URL): null | [string, string
   }
   if (fristSegment.startsWith("@")) {
     [pkgNameNoScope, pkgVersion] = segments[1].split("@");
-    pkgName = fristSegment + "/" + pkgNameNoScope;
+    pkgName = `${fristSegment}/${pkgNameNoScope}`;
     target = segments[2];
     hasTargetSegment = ESM_TARGETS.has(target);
     subPath = segments.slice(3).join("/");
@@ -1429,13 +1432,13 @@ function parseEsmModulePath({ protocol, pathname }: URL): null | [string, string
   if (subPath === pkgNameNoScope) {
     return [pkgName, pkgVersion, target, ""];
   }
-  if (subPath === "__" + pkgNameNoScope) {
+  if (subPath === `__${pkgNameNoScope}`) {
     subPath = pkgNameNoScope;
   }
   return [pkgName, pkgVersion, target, subPath];
 }
 
-const regexpESMPath = /\/((@|gh\/|pr\/|jsr\/@)[\w\.\-]+\/)?[\w\.\-]+@(\d+(\.\d+){0,2}(\-[\w\.]+)?|next|canary|rc|beta|latest)$/;
+const regexpESMPath = /\/((@|gh\/|pr\/|jsr\/@)[\w.-]+\/)?[\w.-]+@(\d+(\.\d+){0,2}(-[\w.]+)?|next|canary|rc|beta|latest)$/;
 
 function isWellKnownCDNURL(url: URL): boolean {
   const { pathname } = url;
@@ -1583,18 +1586,17 @@ function toTsSignatureHelpTriggerReason(context: monacoNS.languages.SignatureHel
         if (context.isRetrigger) {
           return {
             kind: "retrigger",
-            triggerCharacter: context.triggerCharacter as any,
+            triggerCharacter: context.triggerCharacter as string,
           };
         } else {
           return {
             kind: "characterTyped",
-            triggerCharacter: context.triggerCharacter as any,
+            triggerCharacter: context.triggerCharacter as string,
           };
         }
       } else {
         return { kind: "invoked" };
       }
-    case 1 /* Invoke */:
     default:
       return { kind: "invoked" };
   }

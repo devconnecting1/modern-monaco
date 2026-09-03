@@ -1,15 +1,23 @@
+import type { LanguageInput } from "@shikijs/core";
 import type monacoNS from "monaco-editor-core";
-import type { Highlighter, RenderOptions, ShikiInitOptions } from "./shiki.ts";
-import type { LSPConfig, LSPProvider } from "./lsp/index.ts";
 import { version } from "../package.json";
-
+import type { LSPConfig, LSPProvider } from "./lsp/index.ts";
 // ! external modules, don't remove the `.js` extension
-import { getExtnameFromLanguageId, getLanguageIdFromPath, grammars, initShiki, setDefaultWasmLoader, themes } from "./shiki.js";
-import { initShikiMonacoTokenizer, registerShikiMonacoTokenizer } from "./shiki.js";
-import { render } from "./shiki.js";
+import {
+  getExtnameFromLanguageId,
+  getLanguageIdFromPath,
+  grammars,
+  initShiki,
+  initShikiMonacoTokenizer,
+  registerShikiMonacoTokenizer,
+  render,
+  setDefaultWasmLoader,
+  themes,
+} from "./shiki.js";
+import type { Highlighter, RenderOptions, ShikiInitOptions } from "./shiki.ts";
 import { getWasmInstance } from "./shiki-wasm.js";
-import { NotFoundError, Workspace } from "./workspace.js";
 import { debunce, decode, isDigital } from "./util.js";
+import { NotFoundError, Workspace } from "./workspace.js";
 
 export interface InitOptions extends ShikiInitOptions {
   /**
@@ -66,7 +74,7 @@ const setStyle = (el: HTMLElement, style: Partial<CSSStyleDeclaration>) => Objec
 
 /* Initialize and return the monaco editor namespace. */
 export async function init(options?: InitOptions): Promise<typeof monacoNS> {
-  const langs = (options?.langs ?? []).concat(syntaxes as any[]);
+  const langs = (options?.langs ?? []).concat(syntaxes as LanguageInput[]);
   const shiki = await initShiki({ ...options, langs });
   return loadMonaco(shiki, options?.workspace, options?.lsp);
 }
@@ -86,23 +94,23 @@ export function lazy(options?: InitOptions) {
           for (const attrName of this.getAttributeNames()) {
             const key = editorProps.find((k) => k.toLowerCase() === attrName);
             if (key) {
-              let value: any = getAttr(this, attrName);
+              let value: string | null | boolean | number | Record<string, unknown> | undefined = getAttr(this, attrName);
               if (value === "") {
                 value = key === "minimap" || key === "stickyScroll" ? { enabled: true } : true;
               } else {
-                value = value.trim();
+                value = (value as string).trim();
                 if (value === "true") {
                   value = true;
                 } else if (value === "false") {
                   value = false;
                 } else if (value === "null") {
                   value = null;
-                } else if (/^\d+$/.test(value)) {
+                } else if (/^\d+$/.test(value as string)) {
                   value = Number(value);
-                } else if (/^\{.+\}$/.test(value)) {
+                } else if (/^\{.+\}$/.test(value as string)) {
                   try {
-                    value = JSON.parse(value);
-                  } catch (error) {
+                    value = JSON.parse(value as string);
+                  } catch (_error) {
                     value = undefined;
                   }
                 }
@@ -110,8 +118,8 @@ export function lazy(options?: InitOptions) {
               if (key === "padding") {
                 if (typeof value === "number") {
                   value = { top: value, bottom: value };
-                } else if (/^\d+\s+\d+$/.test(value)) {
-                  const [top, bottom] = value.split(/\s+/);
+                } else if (/^\d+\s+\d+$/.test(value as string)) {
+                  const [top, bottom] = (value as string).split(/\s+/);
                   if (top && bottom) {
                     value = { top: Number(top), bottom: Number(bottom) };
                   }
@@ -135,7 +143,7 @@ export function lazy(options?: InitOptions) {
           const firstEl = this.firstElementChild;
           if (firstEl && firstEl.tagName === "SCRIPT" && firstEl.className === "monaco-editor-options") {
             try {
-              const v = JSON.parse(firstEl.textContent!);
+              const v = JSON.parse(firstEl.textContent ?? "");
               if (Array.isArray(v) && v.length === 2) {
                 const [input, opts] = v;
                 Object.assign(renderOptions, opts);
@@ -165,7 +173,7 @@ export function lazy(options?: InitOptions) {
           if (isDigital(widthAttr) && isDigital(heightAttr)) {
             const width = Number(widthAttr);
             const height = Number(heightAttr);
-            setStyle(this, { width: width + "px", height: height + "px" });
+            setStyle(this, { width: `${width}px`, height: `${height}px` });
             renderOptions.dimension = { width, height };
           } else {
             if (isDigital(widthAttr)) {
@@ -190,7 +198,7 @@ export function lazy(options?: InitOptions) {
               filename = workspace.entryFile;
               workspace.history.replace(filename);
             } else {
-              const rootFiles = (await workspace.fs.readDirectory("/")).filter(([name, type]) => type === 1).map(([name]) => name);
+              const rootFiles = (await workspace.fs.readDirectory("/")).filter(([_name, type]) => type === 1).map(([name]) => name);
               filename = rootFiles.includes("index.html") ? "index.html" : rootFiles[0];
               if (filename) {
                 workspace.history.replace(filename);
@@ -198,9 +206,9 @@ export function lazy(options?: InitOptions) {
             }
           }
 
-          const langs = (options?.langs ?? []).concat(syntaxes as any[]);
+          const langs = (options?.langs ?? []).concat(syntaxes as LanguageInput[]);
           if (renderOptions.language || filename) {
-            const lang = renderOptions.language ?? getLanguageIdFromPath(filename!) ?? "plaintext";
+            const lang = renderOptions.language ?? (filename ? getLanguageIdFromPath(filename) : null) ?? "plaintext";
             if (!syntaxes.find((s) => s.name === lang)) {
               langs.push(lang);
             }
@@ -260,7 +268,8 @@ export function lazy(options?: InitOptions) {
 
           // load and render editor
           {
-            const monaco = await (monacoPromise ?? (monacoPromise = loadMonaco(highlighter, workspace, options?.lsp)));
+            monacoPromise ??= loadMonaco(highlighter, workspace, options?.lsp);
+            const monaco = await monacoPromise;
             const editor = monaco.editor.create(containerEl, renderOptions);
             if (workspace) {
               const storeViewState = () => {
@@ -334,7 +343,7 @@ export function lazy(options?: InitOptions) {
             }
           }
         }
-      }
+      },
     );
   }
 }
@@ -352,7 +361,8 @@ async function loadMonaco(highlighter: Highlighter, workspace?: Workspace, lsp?:
   let lspModuleUrl = `${cdnUrl}/es2022/lsp.mjs`;
 
   let importmapEl: HTMLScriptElement | null = null;
-  if ((importmapEl = document.querySelector("script[type='importmap']"))) {
+  importmapEl = document.querySelector("script[type='importmap']");
+  if (importmapEl) {
     try {
       const { imports = {} } = JSON.parse(importmapEl.textContent);
       if (imports["modern-monaco/editor-core"]) {
@@ -361,12 +371,12 @@ async function loadMonaco(highlighter: Highlighter, workspace?: Workspace, lsp?:
       if (imports["modern-monaco/lsp"]) {
         lspModuleUrl = imports["modern-monaco/lsp"];
       }
-    } catch (error) {
+    } catch (_error) {
       // ignore
     }
   }
 
-  const useBuiltinLSP = (globalThis as any).MonacoEnvironment?.useBuiltinLSP;
+  const useBuiltinLSP = (globalThis as { MonacoEnvironment?: { useBuiltinLSP?: boolean } }).MonacoEnvironment?.useBuiltinLSP;
   const [monaco, { builtinLSPProviders }]: [typeof import("./editor-core"), typeof import("./lsp")] = await Promise.all([
     import(/* webpackIgnore: true */ editorCoreModuleUrl),
     useBuiltinLSP ? import(/* webpackIgnore: true */ lspModuleUrl) : Promise.resolve({ builtinLSPProviders: {} }),
@@ -443,7 +453,7 @@ async function loadMonaco(highlighter: Highlighter, workspace?: Workspace, lsp?:
           editor.updateOptions({ readOnly: isHttpUrl });
           return true;
         }
-      } catch (error) {}
+      } catch (_error) {}
       return false;
     },
   });
@@ -502,7 +512,7 @@ export function registerSyntax(syntax: { name: string; scopeName: string }) {
 }
 
 /** Register a custom theme. */
-export function registerTheme(theme: Record<string, any>) {
+export function registerTheme(theme: Record<string, unknown>) {
   if (theme.name) {
     themes.set(theme.name, theme);
   }

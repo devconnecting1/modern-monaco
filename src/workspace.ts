@@ -28,7 +28,7 @@ import {
 export class NotFoundError extends Error {
   readonly FS_ERROR = "NOT_FOUND";
   constructor(message: string) {
-    super("No such file or directory: " + message);
+    super(`No such file or directory: ${message}`);
   }
 }
 
@@ -44,8 +44,8 @@ export class Workspace implements IWorkspace {
     const { name = "default", browserHistory, initialFiles, entryFile, customFS } = options;
 
     this._monaco = promiseWithResolvers();
-    this._fs = customFS ?? new IndexedDBFileSystem("modern-monaco-workspace(" + name + ")");
-    this._viewState = new WorkspaceStateStorage<monacoNS.editor.ICodeEditorViewState>("modern-monaco-state(" + name + ")");
+    this._fs = customFS ?? new IndexedDBFileSystem(`modern-monaco-workspace(${name})`);
+    this._viewState = new WorkspaceStateStorage<monacoNS.editor.ICodeEditorViewState>(`modern-monaco-state(${name})`);
     this._entryFile = entryFile;
 
     if (initialFiles) {
@@ -95,7 +95,7 @@ export class Workspace implements IWorkspace {
     return this._viewState;
   }
 
-  async openTextDocument(uri: string | URL, content?: string, editor?: any): Promise<monacoNS.editor.ITextModel> {
+  async openTextDocument(uri: string | URL, content?: string, editor?: monacoNS.editor.IStandaloneCodeEditor): Promise<monacoNS.editor.ITextModel> {
     const monaco = await this._monaco.promise;
     const getEditor = async () => {
       const editors = monaco.editor.getEditors();
@@ -113,7 +113,7 @@ export class Workspace implements IWorkspace {
     editor: monacoNS.editor.ICodeEditor,
     uri: string | URL,
     selectionOrPosition?: monacoNS.IRange | monacoNS.IPosition,
-    readonlyContent?: string
+    readonlyContent?: string,
   ): Promise<monacoNS.editor.ITextModel> {
     const fs = this._fs;
     const href = normalizeURL(uri).href;
@@ -125,7 +125,7 @@ export class Workspace implements IWorkspace {
       const persist = createPersistTask(() => fs.writeFile(href, model.getValue(), { isModelContentChange: true }));
       const disposable = model.onDidChangeContent(persist);
       const unwatch = fs.watch(href, (kind, _, __, context) => {
-        if (kind === "modify" && (!context || !context.isModelContentChange)) {
+        if (kind === "modify" && !context?.isModelContentChange) {
           fs.readTextFile(href).then((content) => {
             if (model.getValue() !== content) {
               model.setValue(content);
@@ -176,16 +176,16 @@ export class Workspace implements IWorkspace {
     return monaco.showInputBox(options, token);
   }
 
-  async showQuickPick(items: any, options: any, token?: monacoNS.CancellationToken) {
+  async showQuickPick(items: monacoNS.QuickPickItem[] | string[], options?: monacoNS.QuickPickOptions, token?: monacoNS.CancellationToken) {
     const monaco = await this._monaco.promise;
-    return monaco.showQuickPick(items, options, token) as any;
+    return monaco.showQuickPick(items, options, token) as monacoNS.QuickPickItem | undefined;
   }
 }
 
 type FileSystemWatcher = {
   pathname: string;
   recursive?: boolean;
-  handle: (kind: "create" | "modify" | "remove", filename: string, type?: number, context?: any) => void;
+  handle: (kind: "create" | "modify" | "remove", filename: string, type?: number, context?: unknown) => void;
 };
 
 /** workspace file system using IndexedDB. */
@@ -264,7 +264,7 @@ class IndexedDBFileSystem implements FileSystem {
     }
     const metaStore = await this._getIdbObjectStore("fs-meta");
     const entries: [string, number][] = [];
-    const dir = "file://" + pathname + (pathname.endsWith("/") ? "" : "/");
+    const dir = `file://${pathname}${pathname.endsWith("/") ? "" : "/"}`;
     await openIDBCursor(metaStore, IDBKeyRange.lowerBound(dir, true), (cursor) => {
       const stat = cursor.value;
       if (stat.url.startsWith(dir)) {
@@ -293,7 +293,7 @@ class IndexedDBFileSystem implements FileSystem {
     return this.readFile(filename).then(decode);
   }
 
-  async writeFile(name: string, content: string | Uint8Array, context?: any): Promise<void> {
+  async writeFile(name: string, content: string | Uint8Array, context?: unknown): Promise<void> {
     const { pathname, href: url } = filenameToURL(name);
     const dir = pathname.slice(0, pathname.lastIndexOf("/"));
     if (dir) {
@@ -357,7 +357,7 @@ class IndexedDBFileSystem implements FileSystem {
               return true;
             }
             return false;
-          })
+          }),
         );
         await Promise.all(promises);
         for (const [url, type] of deleted) {
@@ -379,7 +379,7 @@ class IndexedDBFileSystem implements FileSystem {
     }
   }
 
-  async copy(source: string, target: string, options?: { overwrite: boolean }): Promise<void> {
+  async copy(_source: string, _target: string, _options?: { overwrite: boolean }): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
@@ -412,7 +412,7 @@ class IndexedDBFileSystem implements FileSystem {
       }
     }
     const [metaStore, blobStore] = await this._getIdbObjectStores(true);
-    const promises: Promise<any>[] = [
+    const promises: Promise<unknown>[] = [
       promisifyIDBRequest(metaStore.delete(oldUrl)),
       promisifyIDBRequest(metaStore.put({ ...oldStat, url: newUrl })),
     ];
@@ -457,10 +457,10 @@ class IndexedDBFileSystem implements FileSystem {
   watch(
     filename: string,
     handleOrOptions: FileSystemWatcher["handle"] | { recursive: boolean },
-    handle?: FileSystemWatcher["handle"]
+    handle?: FileSystemWatcher["handle"],
   ): () => void {
     const options = typeof handleOrOptions === "function" ? undefined : handleOrOptions;
-    handle = typeof handleOrOptions === "function" ? handleOrOptions : handle!;
+    handle = typeof handleOrOptions === "function" ? handleOrOptions : (handle as FileSystemWatcher["handle"]);
     if (typeof handle !== "function") {
       throw new TypeError("handle must be a function");
     }
@@ -471,11 +471,11 @@ class IndexedDBFileSystem implements FileSystem {
     };
   }
 
-  private async _notify(kind: "create" | "modify" | "remove", pathname: string, type?: number, context?: any) {
+  private async _notify(kind: "create" | "modify" | "remove", pathname: string, type?: number, context?: unknown) {
     for (const watcher of this._watchers) {
       if (
         watcher.pathname === pathname ||
-        (watcher.recursive && (watcher.pathname === "/" || pathname.startsWith(watcher.pathname + "/")))
+        (watcher.recursive && (watcher.pathname === "/" || pathname.startsWith(`${watcher.pathname}/`)))
       ) {
         watcher.handle(kind, pathname, type, context);
       }
@@ -494,7 +494,8 @@ class WorkspaceDatabase {
           // reopen the db on 'close' event
           this._db = open();
         };
-        return (this._db = db);
+        this._db = db;
+        return this._db;
       });
     this._db = open();
   }
@@ -537,7 +538,7 @@ class LocalStorageHistory implements WorkspaceHistory {
   constructor(scope: string, maxHistory = 100) {
     const defaultState = { current: -1, history: [] };
     this._state = supportLocalStorage()
-      ? createPersistStateStorage("modern-monaco-workspace-history:" + scope, defaultState)
+      ? createPersistStateStorage(`modern-monaco-workspace-history:${scope}`, defaultState)
       : defaultState;
     this._maxHistory = maxHistory;
   }
@@ -606,7 +607,7 @@ class BrowserHistory implements WorkspaceHistory {
   private _handlers = new Set<(state: WorkspaceHistoryState) => void>();
 
   constructor(basePath = "") {
-    this._basePath = "/" + basePath.split("/").filter(Boolean).join("/");
+    this._basePath = `/${basePath.split("/").filter(Boolean).join("/")}`;
     this._current = this._trimBasePath(location.pathname);
     window.addEventListener("popstate", () => {
       this._current = this._trimBasePath(location.pathname);
@@ -615,7 +616,7 @@ class BrowserHistory implements WorkspaceHistory {
   }
 
   private _trimBasePath(pathname: string) {
-    if (pathname != "/" && pathname.startsWith(this._basePath)) {
+    if (pathname !== "/" && pathname.startsWith(this._basePath)) {
       return new URL(pathname.slice(this._basePath.length), "file:///").href;
     }
     return "";
@@ -626,7 +627,7 @@ class BrowserHistory implements WorkspaceHistory {
     if (url.protocol === "file:") {
       return basePath + url.pathname;
     }
-    return basePath + "/" + url.href;
+    return `${basePath}/${url.href}`;
   }
 
   private _onPopState() {

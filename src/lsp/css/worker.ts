@@ -1,9 +1,8 @@
 import type monacoNS from "monaco-editor-core";
 import * as cssService from "vscode-css-languageservice";
-import { WorkerBase, type WorkerCreateData } from "../worker-base.ts";
-
 // ! external modules, don't remove the `.js` extension
 import { initializeWorker } from "../../editor-worker.js";
+import { WorkerBase, type WorkerCreateData } from "../worker-base.ts";
 
 export interface CSSLanguageServiceOptions {
   /** Defines whether the standard CSS properties, at-directives, pseudoClasses and pseudoElements are shown. */
@@ -21,7 +20,7 @@ export interface CreateData extends WorkerCreateData {
   readonly format?: cssService.CSSFormatConfiguration;
 }
 
-export class CSSWorker extends WorkerBase<{}, cssService.Stylesheet> {
+export class CSSWorker extends WorkerBase<Record<string, unknown>, cssService.Stylesheet> {
   private _formatSettings: cssService.CSSFormatConfiguration;
   private _languageService: cssService.LanguageService;
 
@@ -97,14 +96,14 @@ export class CSSWorker extends WorkerBase<{}, cssService.Stylesheet> {
   async doFormat(
     uri: string,
     range: cssService.Range | null,
-    options: cssService.CSSFormatConfiguration
+    options: cssService.CSSFormatConfiguration,
   ): Promise<cssService.TextEdit[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
       return null;
     }
     const settings = { ...this._formatSettings, ...options };
-    return this._languageService.format(document, range!, settings);
+    return this._languageService.format(document, range ?? { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }, settings);
   }
 
   async findDocumentSymbols(uri: string): Promise<cssService.DocumentSymbol[] | null> {
@@ -168,7 +167,7 @@ export class CSSWorker extends WorkerBase<{}, cssService.Stylesheet> {
   async getColorPresentations(
     uri: string,
     color: cssService.Color,
-    range: cssService.Range
+    range: cssService.Range,
   ): Promise<cssService.ColorPresentation[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {

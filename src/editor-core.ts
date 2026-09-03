@@ -1,7 +1,7 @@
 import type { InputBoxOptions, QuickPickItem, QuickPickOptions } from "monaco-editor-core";
-import { editor, languages, Uri } from "monaco-editor-core";
-import { IQuickInputService } from "monaco-editor-core/esm/vs/platform/quickinput/common/quickInput";
+import { editor, type languages, Uri } from "monaco-editor-core";
 import { StandaloneServices } from "monaco-editor-core/esm/vs/editor/standalone/browser/standaloneServices";
+import { IQuickInputService } from "monaco-editor-core/esm/vs/platform/quickinput/common/quickInput";
 import languageConfigurations from "../language-configurations.json" with { type: "json" };
 
 const defaultEditorOptions: editor.IStandaloneEditorConstructionOptions = {
@@ -31,12 +31,13 @@ Object.assign(editor, {
       // @ts-expect-error `getExtnameFromLanguageId` is injected by modern-monaco
       const extname = MonacoEnvironment.getExtnameFromLanguageId?.(language) ?? "txt";
       const uuid = Math.round((Date.now() + Math.random()) * 1000).toString(36);
-      uri = "file:///.inmemory/" + uuid + "." + extname;
+      uri = `file:///.inmemory/${uuid}.${extname}`;
     }
     return createModel(value, language, uri);
   },
   getModel: (uri: string | URL | Uri) => {
-    return getModel(normalizeUri(uri)!);
+    const normalized = normalizeUri(uri);
+    return normalized instanceof Uri ? getModel(normalized) : undefined;
   },
 });
 
@@ -90,7 +91,7 @@ export function showInputBox(options: InputBoxOptions = {}) {
   }
   if (validateInput) {
     box.onDidChangeValue(async (value: string) => {
-      const validation = value ? await validateValue!(value) : "";
+      const validation = value ? await validateValue?.(value) : "";
       if (validation) {
         if (typeof validation === "string") {
           box.validationMessage = validation;
@@ -108,7 +109,7 @@ export function showInputBox(options: InputBoxOptions = {}) {
   box.show();
   return new Promise<string>((resolve) => {
     box.onDidAccept(async () => {
-      if (!validateInput || !(await validateValue!(box.value))) {
+      if (!validateInput || !(await validateValue?.(box.value))) {
         resolve(box.value);
         box.dispose();
       }
@@ -118,7 +119,10 @@ export function showInputBox(options: InputBoxOptions = {}) {
 
 // showQuickPick has same signature as vscode.window.showQuickPick
 // @see https://code.visualstudio.com/api/references/vscode-api#window.showQuickPick
-export function showQuickPick(items: any[], options: QuickPickOptions = {}) {
+export function showQuickPick(
+  items: readonly (string | QuickPickItem)[] | Promise<readonly (string | QuickPickItem)[]>,
+  options: QuickPickOptions = {},
+) {
   const { placeHolder, title, ignoreFocusOut, matchOnDescription, matchOnDetail, canPickMany, onDidSelectItem, prompt } = options;
   const quickInputService = StandaloneServices.get(IQuickInputService);
   const pick = quickInputService.createQuickPick();
@@ -160,7 +164,7 @@ export function showQuickPick(items: any[], options: QuickPickOptions = {}) {
     });
   }
   pick.show();
-  return new Promise<any>((resolve) => {
+  return new Promise<string | QuickPickItem | (string | QuickPickItem)[]>((resolve) => {
     pick.onDidAccept(() => {
       if (canPickMany) {
         resolve(pick.selectedItems.map((item) => (item.plainMode ? item.label : item)));
@@ -178,7 +182,7 @@ export const languageConfigurationAliases: Record<string, string> = {
   tsx: "typescript",
 };
 
-export function convertVscodeLanguageConfiguration(config: any): languages.LanguageConfiguration {
+export function convertVscodeLanguageConfiguration(config: Record<string, unknown>): languages.LanguageConfiguration {
   const { indentationRules, folding, wordPattern, onEnterRules, surroundingPairs, autoClosingPairs } = config;
   if (folding?.markers) {
     toRegexp(folding.markers, "start", "end");
@@ -209,7 +213,7 @@ export function convertVscodeLanguageConfiguration(config: any): languages.Langu
   return config;
 }
 
-function toRegexp(obj: any, ...keys: string[]) {
+function toRegexp(obj: Record<string, unknown>, ...keys: string[]) {
   for (const key of keys) {
     const value = obj[key];
     if (typeof value === "string") {

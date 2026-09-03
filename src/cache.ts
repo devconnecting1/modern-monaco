@@ -26,7 +26,8 @@ class IndexedDB implements CacheDB {
       db.onclose = () => {
         this.#db = this.#openDB(name);
       };
-      return (this.#db = db);
+      this.#db = db;
+      return db;
     });
   }
 
@@ -89,13 +90,13 @@ class Cache {
       return res;
     }
 
-    const cacheControl = res.headers.get("cache-control")!;
+    const cacheControl = res.headers.get("cache-control") ?? "";
     const maxAgeStr = cacheControl.match(/max-age=(\d+)/)?.[1];
     if (!maxAgeStr) {
       return res;
     }
-    const maxAge = parseInt(maxAgeStr);
-    if (isNaN(maxAge) || maxAge <= 0) {
+    const maxAge = parseInt(maxAgeStr, 10);
+    if (Number.isNaN(maxAge) || maxAge <= 0) {
       return res;
     }
     const createdAt = Date.now();
@@ -117,7 +118,7 @@ class Cache {
     }
     for (const header of ["content-type", "x-typescript-types"]) {
       if (res.headers.has(header)) {
-        file.headers.push([header, res.headers.get(header)!]);
+        file.headers.push([header, res.headers.get(header) ?? ""]);
       }
     }
     file.content = await res.arrayBuffer();
@@ -138,7 +139,7 @@ class Cache {
       }
       const headers = new Headers(file.headers);
       if (headers.has("location")) {
-        const redirectedUrl = headers.get("location")!;
+        const redirectedUrl = headers.get("location") ?? "";
         const res = await this.query(redirectedUrl);
         if (res) {
           defineProperty(res, "redirected", true);

@@ -1,5 +1,5 @@
-import type { editor } from "monaco-editor-core";
 import type { HighlighterCore } from "@shikijs/core";
+import type { editor } from "monaco-editor-core";
 import type { ShikiInitOptions } from "./shiki.ts";
 import { getLanguageIdFromPath } from "./shiki.ts";
 
@@ -79,8 +79,8 @@ export function render(highlighter: HighlighterCore, input: RenderInput, options
     const lines = countLines(code);
     const lineNumbersElements = Array.from({ length: lines }, (_, i) => `<code>${i + 1}</code>`);
     const maxDigitWidth = Math.max(
-      fontDigitWidth ?? getDigitWidth([fontWeight, fontSize + "px", fontFamily].join(" ")) ?? fontSize * 0.6,
-      MINIMUM_MAX_DIGIT_WIDTH
+      fontDigitWidth ?? getDigitWidth([fontWeight, `${fontSize}px`, fontFamily].join(" ")) ?? fontSize * 0.6,
+      MINIMUM_MAX_DIGIT_WIDTH,
     );
     lineNumbersWidth = Math.round(Math.max(lineNumbersMinChars, String(lines).length) * maxDigitWidth);
     const lineNumbersStyle = [
@@ -113,7 +113,7 @@ export function render(highlighter: HighlighterCore, input: RenderInput, options
     "padding:0",
     "font-family:'SF Mono',Monaco,Menlo,Consolas,'Ubuntu Mono','Liberation Mono','DejaVu Sans Mono','Courier New',monospace",
     `font-feature-settings:'liga' ${fontLigatures}, 'calt' ${fontLigatures}`,
-    `font-variation-settings:${fontVariations ? "'wght' " + Number(fontWeight) : "normal"}`,
+    `font-variation-settings:${fontVariations ? `'wght' ${Number(fontWeight)}` : "normal"}`,
     "-webkit-text-size-adjust:100%",
     "scrollbar-width:none",
   ];
@@ -138,7 +138,7 @@ export function render(highlighter: HighlighterCore, input: RenderInput, options
   }
   const shikiStyleIndex = html.indexOf('style="') + 7;
   const shikiStyle = html.slice(shikiStyleIndex, html.indexOf('"', shikiStyleIndex));
-  const finHtml = html.slice(0, shikiStyleIndex) + editorStyle.join(";") + ";" + html.slice(shikiStyleIndex);
+  const finHtml = `${html.slice(0, shikiStyleIndex) + editorStyle.join(";")};${html.slice(shikiStyleIndex)}`;
   const addPadding = (padding: number, side: string) => {
     const style = `{ display:block;height:${padding}px;content:'.';opacity:0 }`;
     css.push(`.${className} .line-numbers:${side}, .${className} .shiki:${side} ${style}`);

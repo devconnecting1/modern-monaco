@@ -1,9 +1,9 @@
 /*! based on https://github.com/shikijs/shiki/blob/main/packages/monaco/src/index.ts */
 
-import type monacoNs from "monaco-editor-core";
 import type { ShikiPrimitive, ThemeRegistrationResolved } from "@shikijs/core";
 import type { StateStack } from "@shikijs/core/textmate";
 import { EncodedTokenMetadata, INITIAL } from "@shikijs/core/textmate";
+import type monacoNs from "monaco-editor-core";
 
 export interface MonacoTheme extends monacoNs.editor.IStandaloneThemeData {}
 
@@ -36,7 +36,7 @@ const tokenizeTimeLimit = 500;
 const colorMap: string[] = [];
 const colorToScopeMap = new Map<string, string>();
 
-export function initShikiMonacoTokenizer(monaco: typeof monacoNs, highlighter: ShikiPrimitive<any, any>) {
+export function initShikiMonacoTokenizer(monaco: typeof monacoNs, highlighter: ShikiPrimitive<unknown, unknown>) {
   // Convert themes to Monaco themes and register them
   const themeMap = new Map<string, MonacoTheme>();
   const themeIds = highlighter.getLoadedThemes();
@@ -75,7 +75,7 @@ export function initShikiMonacoTokenizer(monaco: typeof monacoNs, highlighter: S
   monaco.editor.setTheme(themeIds[0]);
 }
 
-export function registerShikiMonacoTokenizer(monaco: typeof monacoNs, highlighter: ShikiPrimitive<any, any>, languageId: string) {
+export function registerShikiMonacoTokenizer(monaco: typeof monacoNs, highlighter: ShikiPrimitive<unknown, unknown>, languageId: string) {
   if (!highlighter.getLoadedLanguages().includes(languageId)) {
     // Language not loaded
     return;
@@ -100,7 +100,7 @@ export function registerShikiMonacoTokenizer(monaco: typeof monacoNs, highlighte
       }
 
       const tokensLength = result.tokens.length / 2;
-      const tokens: any[] = new Array(tokensLength);
+      const tokens: { startIndex: number; scopes: string }[] = new Array(tokensLength);
       for (let j = 0; j < tokensLength; j++) {
         const startIndex = result.tokens[2 * j];
         const metadata = result.tokens[2 * j + 1];
@@ -147,7 +147,7 @@ function toRGBA(hex: string) {
 }
 
 function toHexColor(rgb: number[]): string {
-  return "#" + rgb.map((c) => c.toString(16).padStart(2, "0")).join("");
+  return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
 function normalizeColor(color: string | string[]): string {

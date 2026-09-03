@@ -99,7 +99,7 @@ function loadTMTheme(src: string | URL, cdn = "https://esm.sh") {
   }
   // check if it's a built-in registered theme
   if (themes.has(src)) {
-    return themes.get(src)!;
+    return themes.get(src) as string;
   }
   src = src
     .replace(/\s+/g, "-")
@@ -107,7 +107,7 @@ function loadTMTheme(src: string | URL, cdn = "https://esm.sh") {
     .toLowerCase();
   if (!shikiThemeIds.has(src)) {
     throw new Error(
-      `Invalid theme ID: ${src}, please ensure the theme ID is one of the following: ${Array.from(shikiThemeIds.keys()).join(", ")}`
+      `Invalid theme ID: ${src}, please ensure the theme ID is one of the following: ${Array.from(shikiThemeIds.keys()).join(", ")}`,
     );
   }
   const url = new URL(`/tm-themes@${tmThemesVersion}/themes/${src}.json`, cdn);

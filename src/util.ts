@@ -12,7 +12,7 @@ export function decode(data: string | Uint8Array): string {
 }
 
 /** Define property with value. */
-export function defineProperty(obj: any, prop: string, value: any) {
+export function defineProperty(obj: Record<string, unknown>, prop: string, value: unknown) {
   Object.defineProperty(obj, prop, { value });
 }
 
@@ -26,7 +26,7 @@ export function filenameToURL(filename: string): URL {
   if (filename.startsWith("file://")) {
     filename = filename.slice(7);
   }
-  const url = new URL(filename.replace(/[\/\\]+/g, "/"), "file:///");
+  const url = new URL(filename.replace(/[/\\]+/g, "/"), "file:///");
   if (url.pathname.endsWith("/")) {
     // strip trailing slash
     url.pathname = url.pathname.slice(0, -1);
@@ -121,7 +121,8 @@ export function createPersistStateStorage<T extends object>(storeKey: string, de
     }
   }
   const persist = createSyncPersistTask(() => localStorage.setItem(storeKey, JSON.stringify(state)), 1000);
-  return (state = createProxy(init, persist));
+  state = createProxy(init, persist);
+  return state;
 }
 
 /** Create a proxy object that triggers onChange when the object is modified. */
@@ -198,8 +199,8 @@ export async function openIDB(
 export function openIDBCursor(
   store: IDBObjectStore,
   range: IDBKeyRange,
-  callback: (cursor: IDBCursorWithValue) => boolean | void,
-  direction?: IDBCursorDirection
+  callback: (cursor: IDBCursorWithValue) => boolean | undefined,
+  direction?: IDBCursorDirection,
 ) {
   return new Promise<void>((resolve, reject) => {
     const corsor = store.openCursor(range, direction);

@@ -1,15 +1,14 @@
-import type monacoNS from "monaco-editor-core";
-import type { FormattingOptions } from "vscode-languageserver-types";
-import type { DocumentLanguageSettings, LanguageSettings } from "vscode-json-languageservice";
-import type { Workspace } from "~/workspace.ts";
-import type { DiagnosticsOptions } from "~/lsp/client.ts";
-import type { CreateData, JSONWorker } from "./worker.ts";
 import { parseFromHtml, parseFromJson, setFetcher } from "@esm.sh/import-map";
-import { schemas as builtinSchemas } from "./schemas.ts";
-
+import type monacoNS from "monaco-editor-core";
+import type { DocumentLanguageSettings, LanguageSettings } from "vscode-json-languageservice";
+import type { FormattingOptions } from "vscode-languageserver-types";
+import type { DiagnosticsOptions } from "~/lsp/client.ts";
+import type { Workspace } from "~/workspace.ts";
 // ! external modules, don't remove the `.js` extension
 import { cache } from "../../cache.js";
 import * as client from "../client.js";
+import { schemas as builtinSchemas } from "./schemas.ts";
+import type { CreateData, JSONWorker } from "./worker.ts";
 
 interface JSONLanguageSettings extends LanguageSettings, DocumentLanguageSettings {
   importMapCodeLens?: boolean;
@@ -21,7 +20,7 @@ export async function setup(
   languageId: string,
   languageSettings?: JSONLanguageSettings,
   formattingOptions?: FormattingOptions,
-  workspace?: Workspace
+  workspace?: Workspace,
 ) {
   const { editor, languages } = monaco;
   const schemas = Array.isArray(languageSettings?.schemas) ? builtinSchemas.concat(languageSettings.schemas) : builtinSchemas;
@@ -77,10 +76,10 @@ export async function setup(
   // register code lens provider for import maps
   if (languageSettings?.importMapCodeLens ?? true) {
     languages.registerCodeLensProvider(languageId, {
-      provideCodeLenses: function (model, _token) {
+      provideCodeLenses: (model, _token) => {
         const isImportMap =
-          model.uri.scheme == "file" &&
-          ["importmap.json", "import_map.json", "import-map.json", "importMap.json"].some((name) => model.uri.path === "/" + name);
+          model.uri.scheme === "file" &&
+          ["importmap.json", "import_map.json", "import-map.json", "importMap.json"].some((name) => model.uri.path === `/${name}`);
         if (isImportMap) {
           const m2 = model.findNextMatch(`"imports":\\s*\\{`, { column: 1, lineNumber: 1 }, true, false, null, false);
           return {
@@ -106,10 +105,10 @@ export async function setup(
   setFetcher(cache.fetch.bind(cache));
 
   // register command to search npm modules
-  editor.registerCommand("importmap:add-import", async (_accessor: any, model: monacoNS.editor.ITextModel) => {
+  editor.registerCommand("importmap:add-import", async (_accessor: unknown, model: monacoNS.editor.ITextModel) => {
     const specifier = await monaco.showInputBox({
       placeHolder: "Enter package name, e.g. react, react@18, react-dom@beta, etc.",
-      validateInput: (value) => (/^[\w\-\.\/@]+$/.test(value) ? null : "Invalid package name"),
+      validateInput: (value) => (/^[\w\-./@]+$/.test(value) ? null : "Invalid package name"),
     });
     if (!specifier) {
       return;
@@ -139,8 +138,8 @@ export async function setup(
     if (modelPath.endsWith(".html")) {
       const html = model.getValue();
       const newHtml = html.replace(
-        /<script[^>]*? type="importmap"[^>]*?>[^]*?<\/script>/,
-        ['<script type="importmap">', ...json.split("\n").map((l) => "  " + l), "</script>"].join("\n  ")
+        /<script[^>]*? type="importmap"[^>]*?>[\s\S]*?<\/script>/,
+        ['<script type="importmap">', ...json.split("\n").map((l) => `  ${l}`), "</script>"].join("\n  "),
       );
       model.setValue(model.normalizeIndentation(newHtml));
     } else if (modelPath.endsWith(".json")) {
@@ -162,22 +161,22 @@ async function createModulePickItems(specifier: string, cdn?: string): Promise<(
   const items: (monacoNS.QuickPickItem & { specifier: string })[] = [
     {
       label: name,
-      description: "@" + version + " main-module",
+      description: `@${version} main-module`,
       picked: true,
-      specifier: name + "@" + version,
+      specifier: `${name}@${version}`,
     },
   ];
   if (exports) {
     const subModules = (exports as string[]).filter(
       (subModule) =>
-        subModule.startsWith("./") && !subModule.endsWith(".json") && !subModule.endsWith(".wasm") && !subModule.endsWith(".css")
+        subModule.startsWith("./") && !subModule.endsWith(".json") && !subModule.endsWith(".wasm") && !subModule.endsWith(".css"),
     );
     subModules.forEach((subModule, index) => {
       const treeChar = index === subModules.length - 1 ? "└" : "├";
       items.push({
-        label: " " + treeChar + " " + subModule.slice(2),
+        label: ` ${treeChar} ${subModule.slice(2)}`,
         description: "sub-module",
-        specifier: name + "@" + version + subModule.slice(1),
+        specifier: `${name}@${version}${subModule.slice(1)}`,
       });
     });
   }

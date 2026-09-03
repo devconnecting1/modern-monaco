@@ -1,8 +1,8 @@
 import vitesseDark from "tm-themes/themes/vitesse-dark.json" with { type: "json" };
-import { syntaxes } from "./syntaxes/index.ts";
-
 // ! external modules, don't remove the `.js` extension
 import { registerSyntax, registerTheme } from "./core.js";
+import { syntaxes } from "./syntaxes/index.ts";
+
 export { errors, hydrate, init, lazy, Workspace } from "./core.js";
 
 // register built-in syntaxes

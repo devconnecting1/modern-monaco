@@ -1,7 +1,7 @@
 // embedded language support for HTML
 // based on https://github.com/microsoft/vscode/blob/main/extensions/html-language-features/server/src/modes/embeddedSupport.ts
 
-import { type LanguageService, Position, TextDocument, TokenType } from "vscode-html-languageservice";
+import { type LanguageService, type Position, type TextDocument, TokenType } from "vscode-html-languageservice";
 
 export interface HTMLDocumentRegions {
   readonly regions: readonly EmbeddedRegion[];
@@ -41,7 +41,7 @@ export function getDocumentRegions(languageService: LanguageService, document: T
 
     let lastTagName: string = "";
     let lastAttributeName: string | null = null;
-    let lastLauguageId: string | undefined = undefined;
+    let lastLauguageId: string | undefined;
     let token = scanner.scan();
 
     while (token !== TokenType.EOS) {
@@ -89,7 +89,7 @@ export function getDocumentRegions(languageService: LanguageService, document: T
               lastLauguageId = undefined;
             }
           } else {
-            const attributeLanguageId = getAttributeLanguage(lastAttributeName!);
+            const attributeLanguageId = getAttributeLanguage(lastAttributeName ?? "");
             if (attributeLanguageId) {
               let start = scanner.getTokenOffset();
               let end = scanner.getTokenEnd();
@@ -153,7 +153,7 @@ function getEmbeddedDocument(
   document: TextDocument,
   contents: EmbeddedRegion[],
   languageId: string,
-  ignoreAttributeValues: boolean
+  ignoreAttributeValues: boolean,
 ): string | null {
   const docText = document.getText();
   let currentPos = 0;
