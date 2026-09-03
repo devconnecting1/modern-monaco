@@ -1,0 +1,14 @@
+node_modules/
+.git/
+src/
+scripts/
+examples/
+types/
+*.md
+*.json
+!vercel.json
+bun.lock
+dprint.json
+tsconfig.json
+.gitignore
+LICENSE

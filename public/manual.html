@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Monaco</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #editor {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "modern-monaco": "/modern-monaco/index.mjs",
+        "modern-monaco/editor-core": "/modern-monaco/editor-core.mjs",
+        "modern-monaco/lsp": "/modern-monaco/lsp/index.mjs"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div id="editor"></div>
+  <script type="module">
+    import { init } from 'modern-monaco';
+    import { workspace } from '/js/workspace.mjs';
+
+    const monaco = await init({ workspace, defaultTheme: 'github-dark-default'});
+    const editor = monaco.editor.create(document.getElementById("editor"), {
+      padding: { top: 8, bottom: 8 },
+    });
+    await workspace.openTextDocument("src/App.tsx")
+  </script>
+</body>
+
+</html>
