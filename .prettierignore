@@ -1,0 +1,7 @@
+node_modules/
+dist/
+types/
+public/
+*.md
+bun.lock
+package-lock.json
