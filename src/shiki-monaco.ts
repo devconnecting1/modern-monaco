@@ -117,9 +117,7 @@ export function registerShikiMonacoTokenizer(monaco: typeof monacoNs, highlighte
 }
 
 class TokenizerState implements monacoNs.languages.IState {
-  constructor(
-    private _ruleStack: StateStack,
-  ) {}
+  constructor(private _ruleStack: StateStack) {}
 
   public get ruleStack(): StateStack {
     return this._ruleStack;
@@ -130,18 +128,13 @@ class TokenizerState implements monacoNs.languages.IState {
   }
 
   public equals(other: monacoNs.languages.IState): boolean {
-    return (
-      other
-      && other instanceof TokenizerState
-      && other === this
-      && other._ruleStack === this._ruleStack
-    );
+    return other && other instanceof TokenizerState && other === this && other._ruleStack === this._ruleStack;
   }
 }
 
 function toRGBA(hex: string) {
   const start = hex.charCodeAt(0) === /* '#' */ 35 ? 1 : 0;
-  const step = (hex.length - start) >= 6 ? 2 : 1;
+  const step = hex.length - start >= 6 ? 2 : 1;
   const rgba = [0, 0, 0, 0];
   for (let i = 0; i < 4; i++) {
     const j = start + i * step;
@@ -154,7 +147,7 @@ function toRGBA(hex: string) {
 }
 
 function toHexColor(rgb: number[]): string {
-  return "#" + rgb.map(c => c.toString(16).padStart(2, "0")).join("");
+  return "#" + rgb.map((c) => c.toString(16).padStart(2, "0")).join("");
 }
 
 function normalizeColor(color: string | string[]): string {

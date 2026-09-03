@@ -3,13 +3,7 @@ import type { SchemaConfiguration } from "vscode-json-languageservice";
 export const schemas: SchemaConfiguration[] = [
   {
     uri: "https://github.com/denoland/vscode_deno/blob/main/schemas/import_map.schema.json",
-    fileMatch: [
-      "import_map.json",
-      "import-map.json",
-      "importmap.json",
-      "importMap.json",
-      "*.importmap",
-    ],
+    fileMatch: ["import_map.json", "import-map.json", "importmap.json", "importMap.json", "*.importmap"],
     schema: {
       $schema: "http://json-schema.org/draft-07/schema#",
       title: "An Import Map",
@@ -49,8 +43,6 @@ export const schemas: SchemaConfiguration[] = [
   },
   {
     uri: "https://json.schemastore.org/tsconfig",
-    fileMatch: [
-      "tsconfig.json",
-    ],
+    fileMatch: ["tsconfig.json"],
   },
 ];

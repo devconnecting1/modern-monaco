@@ -26,7 +26,7 @@ export async function setup(
   languageId: string,
   languageSettings?: TypeScriptLanguageSettings,
   formattingOptions?: FormattingOptions & { semicolon?: "ignore" | "insert" | "remove" },
-  workspace?: Workspace,
+  workspace?: Workspace
 ) {
   if (!worker) {
     worker = createWorker(monaco, workspace, languageSettings, formattingOptions);
@@ -55,7 +55,7 @@ async function createWorker(
   monaco: typeof monacoNS,
   workspace?: Workspace,
   languageSettings?: TypeScriptLanguageSettings,
-  formattingOptions?: FormattingOptions & { semicolon?: "ignore" | "insert" | "remove" },
+  formattingOptions?: FormattingOptions & { semicolon?: "ignore" | "insert" | "remove" }
 ) {
   const fs = workspace?.fs;
   const defaultCompilerOptions: CompilerOptions = {
@@ -131,7 +131,7 @@ async function createWorker(
         }
         try {
           const editors = monaco.editor.getEditors();
-          const editor = editors.find(e => e.hasWidgetFocus() || e.hasTextFocus()) ?? editors[0];
+          const editor = editors.find((e) => e.hasWidgetFocus() || e.hasTextFocus()) ?? editors[0];
           if (editor) {
             await workspace._openTextDocument(monaco, editor, uri);
             return true;
@@ -168,7 +168,7 @@ async function createWorker(
       });
     };
     const watchTypeFiles = () =>
-      (compilerOptions.$types as string[] ?? [])
+      ((compilerOptions.$types as string[]) ?? [])
         .filter((url) => !url.startsWith("https://") && !url.startsWith("http://"))
         .map((url) =>
           fs.watch(url, async (kind) => {
@@ -222,10 +222,10 @@ function createWebWorker(): Worker {
   const workerUrl: URL = new URL("./worker.mjs", import.meta.url);
   if (workerUrl.origin !== location.origin) {
     // create a blob url for cross-origin workers if the url is not same-origin
-    return new Worker(
-      URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })),
-      { type: "module", name: "typescript-worker" },
-    );
+    return new Worker(URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })), {
+      type: "module",
+      name: "typescript-worker",
+    });
   }
   return new Worker(workerUrl, { type: "module", name: "typescript-worker" });
 }
@@ -245,9 +245,7 @@ class TypesSet {
   }
 
   public reset(types: Record<string, string>) {
-    const toRemove = Object.keys(this._types).filter(
-      (key) => !types[key],
-    );
+    const toRemove = Object.keys(this._types).filter((key) => !types[key]);
     for (const key of toRemove) {
       this.remove(key);
     }
@@ -257,10 +255,7 @@ class TypesSet {
   }
 
   public add(content: string, filePath: string): boolean {
-    if (
-      this._types[filePath]
-      && this._types[filePath].content === content
-    ) {
+    if (this._types[filePath] && this._types[filePath].content === content) {
       return false;
     }
     let version = 1;
@@ -289,37 +284,35 @@ class TypesSet {
     const types = compilerOptions.types;
     if (Array.isArray(types)) {
       delete compilerOptions.types;
-      await Promise.all(types.map(async (type) => {
-        if (/^https?:\/\//.test(type)) {
-          const res = await cache.fetch(type);
-          const dtsUrl = res.headers.get("x-typescript-types");
-          if (dtsUrl) {
-            res.body?.cancel?.();
-            const res2 = await cache.fetch(dtsUrl);
-            if (res2.ok) {
-              return [dtsUrl, await res2.text()];
+      await Promise.all(
+        types.map(async (type) => {
+          if (/^https?:\/\//.test(type)) {
+            const res = await cache.fetch(type);
+            const dtsUrl = res.headers.get("x-typescript-types");
+            if (dtsUrl) {
+              res.body?.cancel?.();
+              const res2 = await cache.fetch(dtsUrl);
+              if (res2.ok) {
+                return [dtsUrl, await res2.text()];
+              } else {
+                console.error(`Failed to fetch "${dtsUrl}": ` + (await res2.text()));
+              }
+            } else if (res.ok) {
+              return [type, await res.text()];
             } else {
-              console.error(
-                `Failed to fetch "${dtsUrl}": ` + await res2.text(),
-              );
+              console.error(`Failed to fetch "${dtsUrl}": ` + (await res.text()));
             }
-          } else if (res.ok) {
-            return [type, await res.text()];
-          } else {
-            console.error(
-              `Failed to fetch "${dtsUrl}": ` + await res.text(),
-            );
+          } else if (typeof type === "string" && workspace) {
+            const dtsUrl = new URL(type.replace(/\.d\.ts$/, "") + ".d.ts", "file:///").href;
+            try {
+              return [dtsUrl, await workspace.fs.readTextFile(dtsUrl)];
+            } catch (error) {
+              console.error(`Failed to read "${dtsUrl}": ` + error.message);
+            }
           }
-        } else if (typeof type === "string" && workspace) {
-          const dtsUrl = new URL(type.replace(/\.d\.ts$/, "") + ".d.ts", "file:///").href;
-          try {
-            return [dtsUrl, await workspace.fs.readTextFile(dtsUrl)];
-          } catch (error) {
-            console.error(`Failed to read "${dtsUrl}": ` + error.message);
-          }
-        }
-        return null;
-      })).then((e) => {
+          return null;
+        })
+      ).then((e) => {
         const entries = e.filter(Boolean) as [string, string][];
         if (workspace) {
           compilerOptions.$types = entries.map(([url]) => url).filter((url) => url.startsWith("file://"));
@@ -349,7 +342,7 @@ async function loadCompilerOptions(workspace: Workspace) {
 /** Load import maps from the root index.html or external json file in the workspace. */
 export async function loadImportMap(workspace: Workspace, validate: (im: ImportMap) => ImportMapRaw) {
   try {
-    let indexHtml = await workspace.fs.readTextFile("index.html");
+    const indexHtml = await workspace.fs.readTextFile("index.html");
     return validate(parseFromHtml(indexHtml, "file:///"));
   } catch (error) {
     if (!isFsNotFoundError(error)) {

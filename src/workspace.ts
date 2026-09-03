@@ -99,13 +99,13 @@ export class Workspace implements IWorkspace {
     const monaco = await this._monaco.promise;
     const getEditor = async () => {
       const editors = monaco.editor.getEditors();
-      const editor = editors.find(e => e.hasWidgetFocus() || e.hasTextFocus()) ?? editors[0];
+      const editor = editors.find((e) => e.hasWidgetFocus() || e.hasTextFocus()) ?? editors[0];
       if (!editor) {
         return new Promise<monacoNS.editor.ICodeEditor>((resolve) => setTimeout(() => resolve(getEditor()), 100));
       }
       return editor;
     };
-    return this._openTextDocument(monaco, editor ?? await getEditor(), uri, undefined, content);
+    return this._openTextDocument(monaco, editor ?? (await getEditor()), uri, undefined, content);
   }
 
   async _openTextDocument(
@@ -113,11 +113,11 @@ export class Workspace implements IWorkspace {
     editor: monacoNS.editor.ICodeEditor,
     uri: string | URL,
     selectionOrPosition?: monacoNS.IRange | monacoNS.IPosition,
-    readonlyContent?: string,
+    readonlyContent?: string
   ): Promise<monacoNS.editor.ITextModel> {
     const fs = this._fs;
     const href = normalizeURL(uri).href;
-    const content = readonlyContent ?? await fs.readTextFile(href);
+    const content = readonlyContent ?? (await fs.readTextFile(href));
     const viewState = await this.viewState.get(href);
     const modelUri = monaco.Uri.parse(href);
     const model = monaco.editor.getModel(modelUri) ?? monaco.editor.createModel(content, undefined, modelUri);
@@ -194,11 +194,7 @@ class IndexedDBFileSystem implements FileSystem {
   private _db: WorkspaceDatabase;
 
   constructor(scope: string) {
-    this._db = new WorkspaceDatabase(
-      scope,
-      { name: "fs-meta", keyPath: "url" },
-      { name: "fs-blob", keyPath: "url" },
-    );
+    this._db = new WorkspaceDatabase(scope, { name: "fs-meta", keyPath: "url" }, { name: "fs-blob", keyPath: "url" });
   }
 
   private async _getIdbObjectStore(storeName: string, readwrite = false): Promise<IDBObjectStore> {
@@ -241,7 +237,7 @@ class IndexedDBFileSystem implements FileSystem {
     while (parent) {
       const parentUrl = filenameToURL(parent).href;
 
-      if (!await exists(parentUrl)) {
+      if (!(await exists(parentUrl))) {
         const stat: FileStat = { type: 2, version: 1, ctime: now, mtime: now, size: 0 };
         promises.push(promisifyIDBRequest<void>(metaStore.add({ url: parentUrl, ...stat })));
         newDirs.push(parent);
@@ -333,10 +329,7 @@ class IndexedDBFileSystem implements FileSystem {
       size: content.byteLength,
     };
     const [metaStore, blobStore] = await this._getIdbObjectStores(true);
-    await Promise.all([
-      promisifyIDBRequest(metaStore.put({ url, ...newStat })),
-      promisifyIDBRequest(blobStore.put({ url, content })),
-    ]);
+    await Promise.all([promisifyIDBRequest(metaStore.put({ url, ...newStat })), promisifyIDBRequest(blobStore.put({ url, content }))]);
     this._notify(oldStat ? "modify" : "create", pathname, 1, context);
   }
 
@@ -345,28 +338,27 @@ class IndexedDBFileSystem implements FileSystem {
     const stat = await this.stat(url);
     if (stat.type === 1 /* File */) {
       const [metaStore, blobStore] = await this._getIdbObjectStores(true);
-      await Promise.all([
-        promisifyIDBRequest(metaStore.delete(url)),
-        promisifyIDBRequest(blobStore.delete(url)),
-      ]);
+      await Promise.all([promisifyIDBRequest(metaStore.delete(url)), promisifyIDBRequest(blobStore.delete(url))]);
       this._notify("remove", pathname, 1);
     } else if (stat.type === 2 /* Directory */) {
       if (options?.recursive) {
         const promises: Promise<void>[] = [];
         const [metaStore, blobStore] = await this._getIdbObjectStores(true);
         const deleted: [string, number][] = [];
-        promises.push(openIDBCursor(metaStore, IDBKeyRange.lowerBound(url), (cursor) => {
-          const stat = cursor.value;
-          if (stat.url.startsWith(url)) {
-            if (stat.type === 1) {
-              promises.push(promisifyIDBRequest(blobStore.delete(stat.url)));
+        promises.push(
+          openIDBCursor(metaStore, IDBKeyRange.lowerBound(url), (cursor) => {
+            const stat = cursor.value;
+            if (stat.url.startsWith(url)) {
+              if (stat.type === 1) {
+                promises.push(promisifyIDBRequest(blobStore.delete(stat.url)));
+              }
+              promises.push(promisifyIDBRequest(cursor.delete()));
+              deleted.push([stat.url, stat.type]);
+              return true;
             }
-            promises.push(promisifyIDBRequest(cursor.delete()));
-            deleted.push([stat.url, stat.type]);
-            return true;
-          }
-          return false;
-        }));
+            return false;
+          })
+        );
         await Promise.all(promises);
         for (const [url, type] of deleted) {
           this._notify("remove", new URL(url).pathname, type);
@@ -437,24 +429,20 @@ class IndexedDBFileSystem implements FileSystem {
       if (!dirUrl.endsWith("/")) {
         dirUrl += "/";
       }
-      const renamingChildren = openIDBCursor(
-        metaStore,
-        IDBKeyRange.lowerBound(dirUrl, true),
-        (cursor) => {
-          const stat = cursor.value;
-          if (stat.url.startsWith(dirUrl)) {
-            const url = newUrl + stat.url.slice(dirUrl.length - 1);
-            if (stat.type === 1) {
-              promises.push(renameBlob(stat.url, url));
-            }
-            promises.push(promisifyIDBRequest(metaStore.put({ ...stat, url })));
-            promises.push(promisifyIDBRequest(cursor.delete()));
-            moved.push([new URL(stat.url).pathname, new URL(url).pathname, stat.type]);
-            return true;
+      const renamingChildren = openIDBCursor(metaStore, IDBKeyRange.lowerBound(dirUrl, true), (cursor) => {
+        const stat = cursor.value;
+        if (stat.url.startsWith(dirUrl)) {
+          const url = newUrl + stat.url.slice(dirUrl.length - 1);
+          if (stat.type === 1) {
+            promises.push(renameBlob(stat.url, url));
           }
-          return false;
-        },
-      );
+          promises.push(promisifyIDBRequest(metaStore.put({ ...stat, url })));
+          promises.push(promisifyIDBRequest(cursor.delete()));
+          moved.push([new URL(stat.url).pathname, new URL(url).pathname, stat.type]);
+          return true;
+        }
+        return false;
+      });
       promises.push(renamingChildren);
     }
     await Promise.all(promises);
@@ -469,7 +457,7 @@ class IndexedDBFileSystem implements FileSystem {
   watch(
     filename: string,
     handleOrOptions: FileSystemWatcher["handle"] | { recursive: boolean },
-    handle?: FileSystemWatcher["handle"],
+    handle?: FileSystemWatcher["handle"]
   ): () => void {
     const options = typeof handleOrOptions === "function" ? undefined : handleOrOptions;
     handle = typeof handleOrOptions === "function" ? handleOrOptions : handle!;
@@ -486,7 +474,8 @@ class IndexedDBFileSystem implements FileSystem {
   private async _notify(kind: "create" | "modify" | "remove", pathname: string, type?: number, context?: any) {
     for (const watcher of this._watchers) {
       if (
-        watcher.pathname === pathname || (watcher.recursive && (watcher.pathname === "/" || pathname.startsWith(watcher.pathname + "/")))
+        watcher.pathname === pathname ||
+        (watcher.recursive && (watcher.pathname === "/" || pathname.startsWith(watcher.pathname + "/")))
       ) {
         watcher.handle(kind, pathname, type, context);
       }
@@ -498,17 +487,14 @@ class IndexedDBFileSystem implements FileSystem {
 class WorkspaceDatabase {
   private _db: Promise<IDBDatabase> | IDBDatabase;
 
-  constructor(
-    name: string,
-    ...stores: { name: string; keyPath: string; onCreate?: (store: IDBObjectStore) => Promise<void> }[]
-  ) {
+  constructor(name: string, ...stores: { name: string; keyPath: string; onCreate?: (store: IDBObjectStore) => Promise<void> }[]) {
     const open = () =>
       openIDB(name, 1, ...stores).then((db) => {
         db.onclose = () => {
           // reopen the db on 'close' event
           this._db = open();
         };
-        return this._db = db;
+        return (this._db = db);
       });
     this._db = open();
   }
@@ -523,13 +509,10 @@ class WorkspaceStateStorage<T> {
   #db: WorkspaceDatabase;
 
   constructor(dbName: string) {
-    this.#db = new WorkspaceDatabase(
-      dbName,
-      {
-        name: "store",
-        keyPath: "url",
-      },
-    );
+    this.#db = new WorkspaceDatabase(dbName, {
+      name: "store",
+      keyPath: "url",
+    });
   }
 
   async get(uri: string | URL): Promise<T | undefined> {
@@ -552,7 +535,7 @@ class LocalStorageHistory implements WorkspaceHistory {
   private _handlers = new Set<(state: WorkspaceHistoryState) => void>();
 
   constructor(scope: string, maxHistory = 100) {
-    const defaultState = { "current": -1, "history": [] };
+    const defaultState = { current: -1, history: [] };
     this._state = supportLocalStorage()
       ? createPersistStateStorage("modern-monaco-workspace-history:" + scope, defaultState)
       : defaultState;

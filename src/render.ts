@@ -31,9 +31,7 @@ export function render(highlighter: HighlighterCore, input: RenderInput, options
   const isLinux = userAgent.includes("Linux");
   const GOLDEN_LINE_HEIGHT_RATIO = isMacintosh ? 1.5 : 1.35;
   const EDITOR_FONT_DEFAULTS = {
-    fontFamily: isMacintosh
-      ? DEFAULT_MAC_FONT_FAMILY
-      : (isLinux ? DEFAULT_LINUX_FONT_FAMILY : DEFAULT_WINDOWS_FONT_FAMILY),
+    fontFamily: isMacintosh ? DEFAULT_MAC_FONT_FAMILY : isLinux ? DEFAULT_LINUX_FONT_FAMILY : DEFAULT_WINDOWS_FONT_FAMILY,
     fontWeight: "normal",
     fontSize: isMacintosh ? 12 : 14,
     lineHeight: 0,
@@ -54,10 +52,9 @@ export function render(highlighter: HighlighterCore, input: RenderInput, options
     wordWrap,
     maxTokenizationLineLength = 20000,
   } = options;
-  const fontFamily = [
-    options.fontFamily ? normalizeFontFamily(options.fontFamily) : null,
-    EDITOR_FONT_DEFAULTS.fontFamily,
-  ].filter(Boolean).join(", ");
+  const fontFamily = [options.fontFamily ? normalizeFontFamily(options.fontFamily) : null, EDITOR_FONT_DEFAULTS.fontFamily]
+    .filter(Boolean)
+    .join(", ");
   const fontLigatures = options.fontLigatures && options.fontLigatures !== "false" ? "1" : "0";
   const fontVariations = options.fontVariations && options.fontVariations !== "false" && /^\d+$/.test(fontWeight);
 
@@ -83,7 +80,7 @@ export function render(highlighter: HighlighterCore, input: RenderInput, options
     const lineNumbersElements = Array.from({ length: lines }, (_, i) => `<code>${i + 1}</code>`);
     const maxDigitWidth = Math.max(
       fontDigitWidth ?? getDigitWidth([fontWeight, fontSize + "px", fontFamily].join(" ")) ?? fontSize * 0.6,
-      MINIMUM_MAX_DIGIT_WIDTH,
+      MINIMUM_MAX_DIGIT_WIDTH
     );
     lineNumbersWidth = Math.round(Math.max(lineNumbersMinChars, String(lines).length) * maxDigitWidth);
     const lineNumbersStyle = [
@@ -97,11 +94,7 @@ export function render(highlighter: HighlighterCore, input: RenderInput, options
       `color:${LINE_NUMBERS_COLOR}`,
       `width:${lineNumbersWidth}px`,
     ];
-    lineNumbersHtml = [
-      `<div class="line-numbers" style="${lineNumbersStyle.join(";")}">`,
-      ...lineNumbersElements,
-      "</div>",
-    ].join("");
+    lineNumbersHtml = [`<div class="line-numbers" style="${lineNumbersStyle.join(";")}">`, ...lineNumbersElements, "</div>"].join("");
   }
 
   const decorationsWidth = Number(lineDecorationsWidth) + 16;
@@ -134,10 +127,7 @@ export function render(highlighter: HighlighterCore, input: RenderInput, options
   ];
   const editorStyle = [...fontStyle];
   const className = `mock-monaco-editor-${hashCode(fontStyle.join(";")).toString(36)}`;
-  const css = [
-    `.${className} code { ${fontStyle.join(";")} }`,
-    `.${className}::-webkit-scrollbar { display: none }`,
-  ];
+  const css = [`.${className} code { ${fontStyle.join(";")} }`, `.${className}::-webkit-scrollbar { display: none }`];
   if (wordWrap === "on") {
     style.push("overflow-x:hidden");
     editorStyle.push("word-break:break-all;white-space:pre-wrap;hyphens:none");

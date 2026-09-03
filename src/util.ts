@@ -109,7 +109,7 @@ export function createSyncPersistTask(persist: () => void, delay = 500) {
 /** Create a proxy object that triggers persist in localStorage when the object is modified. */
 export function createPersistStateStorage<T extends object>(storeKey: string, defaultValue?: T): T {
   let state: T;
-  const init = defaultValue ?? {} as T;
+  const init = defaultValue ?? ({} as T);
   const storeValue = localStorage.getItem(storeKey);
   if (storeValue) {
     try {
@@ -121,7 +121,7 @@ export function createPersistStateStorage<T extends object>(storeKey: string, de
     }
   }
   const persist = createSyncPersistTask(() => localStorage.setItem(storeKey, JSON.stringify(state)), 1000);
-  return state = createProxy(init, persist);
+  return (state = createProxy(init, persist));
 }
 
 /** Create a proxy object that triggers onChange when the object is modified. */
@@ -199,7 +199,7 @@ export function openIDBCursor(
   store: IDBObjectStore,
   range: IDBKeyRange,
   callback: (cursor: IDBCursorWithValue) => boolean | void,
-  direction?: IDBCursorDirection,
+  direction?: IDBCursorDirection
 ) {
   return new Promise<void>((resolve, reject) => {
     const corsor = store.openCursor(range, direction);

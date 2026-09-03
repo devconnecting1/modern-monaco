@@ -305,7 +305,7 @@ export function lazy(options?: InitOptions) {
                   throw error;
                 }
               }
-            } else if ((code && (renderOptions.language || filename))) {
+            } else if (code && (renderOptions.language || filename)) {
               // Check if model already exists to prevent duplicate creation
               const modelUri = filename ? monaco.Uri.file(filename) : undefined;
               let model = modelUri ? monaco.editor.getModel(modelUri) : null;
@@ -334,7 +334,7 @@ export function lazy(options?: InitOptions) {
             }
           }
         }
-      },
+      }
     );
   }
 }
@@ -346,17 +346,13 @@ export function hydrate(options?: InitOptions) {
 }
 
 /** Load monaco editor core. */
-async function loadMonaco(
-  highlighter: Highlighter,
-  workspace?: Workspace,
-  lsp?: LSPConfig,
-): Promise<typeof monacoNS> {
-  let cdnUrl = `https://esm.sh/modern-monaco@${version}`;
+async function loadMonaco(highlighter: Highlighter, workspace?: Workspace, lsp?: LSPConfig): Promise<typeof monacoNS> {
+  const cdnUrl = `https://esm.sh/modern-monaco@${version}`;
   let editorCoreModuleUrl = `${cdnUrl}/es2022/editor-core.mjs`;
   let lspModuleUrl = `${cdnUrl}/es2022/lsp.mjs`;
 
   let importmapEl: HTMLScriptElement | null = null;
-  if (importmapEl = document.querySelector("script[type='importmap']")) {
+  if ((importmapEl = document.querySelector("script[type='importmap']"))) {
     try {
       const { imports = {} } = JSON.parse(importmapEl.textContent);
       if (imports["modern-monaco/editor-core"]) {
@@ -461,14 +457,14 @@ async function loadMonaco(
   }
 
   // use the shiki as the tokenizer for the monaco editor
-  const allLanguages = new Set(grammars.filter(g => !g.injectTo).map(g => g.name));
+  const allLanguages = new Set(grammars.filter((g) => !g.injectTo).map((g) => g.name));
   allLanguages.forEach((id) => {
     const languages = monaco.languages;
-    languages.register({ id, aliases: grammars.find(g => g.name === id)?.aliases });
+    languages.register({ id, aliases: grammars.find((g) => g.name === id)?.aliases });
     languages.onLanguage(id, async () => {
       const config = monaco.languageConfigurations[monaco.languageConfigurationAliases[id] ?? id];
       const loadedGrammars = new Set(highlighter.getLoadedLanguages());
-      const reqiredGrammars = [id].concat(grammars.find(g => g.name === id)?.embedded ?? []).filter((id) => !loadedGrammars.has(id));
+      const reqiredGrammars = [id].concat(grammars.find((g) => g.name === id)?.embedded ?? []).filter((id) => !loadedGrammars.has(id));
       if (config) {
         languages.setLanguageConfiguration(id, monaco.convertVscodeLanguageConfiguration(config));
       }

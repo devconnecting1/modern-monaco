@@ -20,9 +20,7 @@ export async function renderToString(input: RenderInput, options?: RenderOptions
   if (language || filename) {
     const languageId = language ?? getLanguageIdFromPath(filename!);
     if (languageId && !highlighter.getLoadedLanguages().includes(languageId)) {
-      console.info(
-        `[modern-monaco] Loading grammar '${languageId}' from CDN...`,
-      );
+      console.info(`[modern-monaco] Loading grammar '${languageId}' from CDN...`);
       promises.push(highlighter.loadGrammarFromCDN(languageId));
     }
   }
@@ -36,13 +34,13 @@ export async function renderToString(input: RenderInput, options?: RenderOptions
 export async function renderToWebComponent(input: RenderInput, options?: RenderOptions): Promise<string> {
   const prerender = await renderToString(input, options);
   return (
-    "<monaco-editor>"
-    + '<script type="application/json" class="monaco-editor-options">'
-    + JSON.stringify([input, options]).replaceAll("/", "\\/")
-    + "</script>"
-    + '<div class="monaco-editor-prerender" style="width:100%;height:100%;">'
-    + prerender
-    + "</div>"
-    + "</monaco-editor>"
+    "<monaco-editor>" +
+    '<script type="application/json" class="monaco-editor-options">' +
+    JSON.stringify([input, options]).replaceAll("/", "\\/") +
+    "</script>" +
+    '<div class="monaco-editor-prerender" style="width:100%;height:100%;">' +
+    prerender +
+    "</div>" +
+    "</monaco-editor>"
   );
 }

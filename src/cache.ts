@@ -26,7 +26,7 @@ class IndexedDB implements CacheDB {
       db.onclose = () => {
         this.#db = this.#openDB(name);
       };
-      return this.#db = db;
+      return (this.#db = db);
     });
   }
 

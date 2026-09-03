@@ -87,7 +87,7 @@ export async function initShiki({
   });
   Object.assign(highlighterCore, {
     loadThemeFromCDN: (themeName: string) => highlighterCore.loadTheme(loadTMTheme(themeName, cdn)),
-    loadGrammarFromCDN: (...ids: string[]) => highlighterCore.loadLanguage(...ids.map(id => loadTMGrammar(id, cdn))),
+    loadGrammarFromCDN: (...ids: string[]) => highlighterCore.loadLanguage(...ids.map((id) => loadTMGrammar(id, cdn))),
   });
   return highlighterCore as unknown as Highlighter;
 }
@@ -101,10 +101,13 @@ function loadTMTheme(src: string | URL, cdn = "https://esm.sh") {
   if (themes.has(src)) {
     return themes.get(src)!;
   }
-  src = src.replace(/\s+/g, "-").replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+  src = src
+    .replace(/\s+/g, "-")
+    .replace(/([a-z])([A-Z])/g, "$1-$2")
+    .toLowerCase();
   if (!shikiThemeIds.has(src)) {
     throw new Error(
-      `Invalid theme ID: ${src}, please ensure the theme ID is one of the following: ${Array.from(shikiThemeIds.keys()).join(", ")}`,
+      `Invalid theme ID: ${src}, please ensure the theme ID is one of the following: ${Array.from(shikiThemeIds.keys()).join(", ")}`
     );
   }
   const url = new URL(`/tm-themes@${tmThemesVersion}/themes/${src}.json`, cdn);
@@ -116,7 +119,7 @@ function loadTMGrammar(src: string | URL, cdn = "https://esm.sh") {
   if (isUrlOrPathname(src)) {
     return cache.fetch(src).then((res) => res.json());
   }
-  const g = grammars.find(g => g.name === src);
+  const g = grammars.find((g) => g.name === src);
   if (g) {
     const url = new URL(`/tm-grammars@${tmGrammarsVersion}/grammars/${g.name}.json`, cdn);
     return cache.fetch(url).then((res) => res.json());
@@ -125,12 +128,14 @@ function loadTMGrammar(src: string | URL, cdn = "https://esm.sh") {
 }
 
 /** Get grammar Info from the given path. */
-export function getGarmmarInfoFromPath(path: string): {
-  name: string;
-  aliases?: string[];
-  embedded?: string[];
-  injectTo?: string[];
-} | undefined {
+export function getGarmmarInfoFromPath(path: string):
+  | {
+      name: string;
+      aliases?: string[];
+      embedded?: string[];
+      injectTo?: string[];
+    }
+  | undefined {
   const idx = path.lastIndexOf(".");
   if (idx > 0) {
     const ext = path.slice(idx + 1);
@@ -153,8 +158,9 @@ export function getExtnameFromLanguageId(language: string): string | undefined {
 }
 
 function isUrlOrPathname(src: string | URL): src is URL {
-  return src instanceof URL
-    || (typeof src === "string" && (src.startsWith("https://") || src.startsWith("http://") || src.startsWith("/")));
+  return (
+    src instanceof URL || (typeof src === "string" && (src.startsWith("https://") || src.startsWith("http://") || src.startsWith("/")))
+  );
 }
 
 // `SHIKI_GRAMMARS` and `SHIKI_THEMES` are defined at build time

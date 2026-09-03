@@ -35,9 +35,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
     const customDataProviders: htmlService.IHTMLDataProvider[] = [];
     if (data?.dataProviders) {
       for (const id in data.dataProviders) {
-        customDataProviders.push(
-          htmlService.newHTMLDataProvider(id, data.dataProviders[id]),
-        );
+        customDataProviders.push(htmlService.newHTMLDataProvider(id, data.dataProviders[id]));
       }
     }
     this._formatSettings = createData.format ?? {};
@@ -120,13 +118,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
       return { $embedded: rsl } as any;
     }
     const htmlDocument = this.getLanguageDocument(document);
-    return this._languageService.doComplete2(
-      document,
-      position,
-      htmlDocument,
-      this,
-      this._suggestSettings,
-    );
+    return this._languageService.doComplete2(document, position, htmlDocument, this, this._suggestSettings);
   }
 
   async doHover(uri: string, position: htmlService.Position): Promise<htmlService.Hover | null> {
@@ -146,7 +138,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
   async doFormat(
     uri: string,
     formatRange: htmlService.Range,
-    options: htmlService.FormattingOptions,
+    options: htmlService.FormattingOptions
   ): Promise<htmlService.TextEdit[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
@@ -197,7 +189,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
 
   async findDefinition(
     uri: string,
-    position: htmlService.Position,
+    position: htmlService.Position
   ): Promise<(htmlService.Location & { originSelectionRange?: htmlService.Range })[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
@@ -238,10 +230,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
       return null;
     }
     const htmlDocument = this.getLanguageDocument(document);
-    return this._languageService.findDocumentSymbols2(
-      document,
-      htmlDocument,
-    );
+    return this._languageService.findDocumentSymbols2(document, htmlDocument);
   }
 
   async findDocumentHighlights(uri: string, position: htmlService.Position): Promise<htmlService.DocumentHighlight[]> {
@@ -255,11 +244,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
       return { $embedded: rsl } as any;
     }
     const htmlDocument = this.getLanguageDocument(document);
-    return this._languageService.findDocumentHighlights(
-      document,
-      position,
-      htmlDocument,
-    );
+    return this._languageService.findDocumentHighlights(document, position, htmlDocument);
   }
 
   async getFoldingRanges(uri: string, context?: { rangeLimit?: number }): Promise<htmlService.FoldingRange[] | null> {
@@ -304,7 +289,7 @@ export class HTMLWorker extends WorkerBase<{}, htmlService.HTMLDocument> {
   async getColorPresentations(
     uri: string,
     color: htmlService.Color,
-    range: htmlService.Range,
+    range: htmlService.Range
   ): Promise<htmlService.ColorPresentation[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {

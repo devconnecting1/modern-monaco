@@ -15,23 +15,13 @@ const { create, createModel, getModel } = editor;
 
 // override monoaco editor APIs.
 Object.assign(editor, {
-  create: (
-    container: HTMLElement,
-    options?: editor.IStandaloneEditorConstructionOptions,
-  ): editor.IStandaloneCodeEditor => {
-    return create(
-      container,
-      {
-        ...defaultEditorOptions,
-        ...options,
-      } satisfies typeof options,
-    );
+  create: (container: HTMLElement, options?: editor.IStandaloneEditorConstructionOptions): editor.IStandaloneCodeEditor => {
+    return create(container, {
+      ...defaultEditorOptions,
+      ...options,
+    } satisfies typeof options);
   },
-  createModel: (
-    value: string,
-    language?: string,
-    uri?: string | URL | Uri,
-  ) => {
+  createModel: (value: string, language?: string, uri?: string | URL | Uri) => {
     uri = normalizeUri(uri);
     if (!language && uri) {
       // @ts-expect-error `getLanguageIdFromUri` is injected by modern-monaco
@@ -69,16 +59,16 @@ export function showInputBox(options: InputBoxOptions = {}) {
   const box = quickInputService.createInputBox();
   const validateValue = validateInput
     ? (value: string) => {
-      const p = validateInput(value);
-      if (p instanceof Promise) {
-        box.busy = true;
-        return p.then((v) => {
-          box.busy = false;
-          return v;
-        });
+        const p = validateInput(value);
+        if (p instanceof Promise) {
+          box.busy = true;
+          return p.then((v) => {
+            box.busy = false;
+            return v;
+          });
+        }
+        return p;
       }
-      return p;
-    }
     : undefined;
   if (title) {
     box.title = title;
@@ -173,9 +163,9 @@ export function showQuickPick(items: any[], options: QuickPickOptions = {}) {
   return new Promise<any>((resolve) => {
     pick.onDidAccept(() => {
       if (canPickMany) {
-        resolve(pick.selectedItems.map(item => item.plainMode ? item.label : item));
+        resolve(pick.selectedItems.map((item) => (item.plainMode ? item.label : item)));
       } else {
-        let selectedItem = pick.selectedItems[0];
+        const selectedItem = pick.selectedItems[0];
         resolve(selectedItem?.plainMode ? selectedItem.label : selectedItem);
       }
       pick.dispose();
@@ -184,8 +174,8 @@ export function showQuickPick(items: any[], options: QuickPickOptions = {}) {
 }
 
 export const languageConfigurationAliases: Record<string, string> = {
-  "jsx": "javascript",
-  "tsx": "typescript",
+  jsx: "javascript",
+  tsx: "typescript",
 };
 
 export function convertVscodeLanguageConfiguration(config: any): languages.LanguageConfiguration {
@@ -197,13 +187,7 @@ export function convertVscodeLanguageConfiguration(config: any): languages.Langu
     toRegexp(config, "wordPattern");
   }
   if (indentationRules) {
-    toRegexp(
-      indentationRules,
-      "increaseIndentPattern",
-      "decreaseIndentPattern",
-      "indentNextLinePattern",
-      "unIndentedLinePattern",
-    );
+    toRegexp(indentationRules, "increaseIndentPattern", "decreaseIndentPattern", "indentNextLinePattern", "unIndentedLinePattern");
   }
   if (onEnterRules) {
     for (const rule of onEnterRules) {
@@ -216,11 +200,11 @@ export function convertVscodeLanguageConfiguration(config: any): languages.Langu
   }
   if (autoClosingPairs) {
     // convert ['"', '"'] -> { open: '"', close: '"' }
-    config.autoClosingPairs = autoClosingPairs.map((v) => Array.isArray(v) ? ({ open: v[0], close: v[1] }) : v);
+    config.autoClosingPairs = autoClosingPairs.map((v) => (Array.isArray(v) ? { open: v[0], close: v[1] } : v));
   }
   if (surroundingPairs) {
     // convert ['"', '"'] -> { open: '"', close: '"' }
-    config.surroundingPairs = surroundingPairs.map((v) => Array.isArray(v) ? ({ open: v[0], close: v[1] }) : v);
+    config.surroundingPairs = surroundingPairs.map((v) => (Array.isArray(v) ? { open: v[0], close: v[1] } : v));
   }
   return config;
 }
@@ -264,10 +248,10 @@ export function createEditorWorkerMain(): Worker {
   const workerUrl: URL = new URL("./editor-worker-main.mjs", import.meta.url);
   // create a blob url for cross-origin workers if the url is not same-origin
   if (workerUrl.origin !== location.origin) {
-    return new Worker(
-      URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })),
-      { type: "module", name: "editor-worker-main" },
-    );
+    return new Worker(URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })), {
+      type: "module",
+      name: "editor-worker-main",
+    });
   }
   return new Worker(workerUrl, { type: "module", name: "editor-worker-main" });
 }

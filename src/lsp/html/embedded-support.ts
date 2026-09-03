@@ -123,7 +123,7 @@ export function getDocumentRegions(languageService: LanguageService, document: T
     getEmbeddedLanguages: (ignoreAttributeValues) => getEmbeddedLanguages(regions, ignoreAttributeValues),
     getEmbeddedLanguageAtPosition: (position) => getEmbeddedLanguageAtPosition(document, regions, position),
     hasEmbeddedLanguage: (languageId, ignoreAttributeValues) =>
-      regions.some(r => r.languageId === languageId && (!ignoreAttributeValues || !r.attributeValue)),
+      regions.some((r) => r.languageId === languageId && (!ignoreAttributeValues || !r.attributeValue)),
   };
 }
 
@@ -137,11 +137,7 @@ function getEmbeddedLanguages(regions: EmbeddedRegion[], ignoreAttributeValues?:
   return result;
 }
 
-function getEmbeddedLanguageAtPosition(
-  document: TextDocument,
-  regions: EmbeddedRegion[],
-  position: Position,
-): string | undefined {
+function getEmbeddedLanguageAtPosition(document: TextDocument, regions: EmbeddedRegion[], position: Position): string | undefined {
   const offset = document.offsetAt(position);
   for (const region of regions) {
     if (region.start > offset) {
@@ -157,7 +153,7 @@ function getEmbeddedDocument(
   document: TextDocument,
   contents: EmbeddedRegion[],
   languageId: string,
-  ignoreAttributeValues: boolean,
+  ignoreAttributeValues: boolean
 ): string | null {
   const docText = document.getText();
   let currentPos = 0;
@@ -166,14 +162,7 @@ function getEmbeddedDocument(
   let hasAny = false;
   for (const c of contents) {
     if (c.languageId === languageId && (!ignoreAttributeValues || !c.attributeValue)) {
-      result = substituteWithWhitespace(
-        result,
-        currentPos,
-        c.start,
-        docText,
-        lastSuffix,
-        getPrefix(c),
-      );
+      result = substituteWithWhitespace(result, currentPos, c.start, docText, lastSuffix, getPrefix(c));
       result += updateContent(c, docText.substring(c.start, c.end));
       currentPos = c.end;
       lastSuffix = getSuffix(c);
@@ -215,14 +204,7 @@ function updateContent(c: EmbeddedRegion, content: string): string {
   return content;
 }
 
-function substituteWithWhitespace(
-  result: string,
-  start: number,
-  end: number,
-  oldContent: string,
-  before: string,
-  after: string,
-) {
+function substituteWithWhitespace(result: string, start: number, end: number, oldContent: string, before: string, after: string) {
   result += before;
   let accumulatedWS = -before.length; // start with a negative value to account for the before string
   for (let i = start; i < end; i++) {

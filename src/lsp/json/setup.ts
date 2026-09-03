@@ -21,7 +21,7 @@ export async function setup(
   languageId: string,
   languageSettings?: JSONLanguageSettings,
   formattingOptions?: FormattingOptions,
-  workspace?: Workspace,
+  workspace?: Workspace
 ) {
   const { editor, languages } = monaco;
   const schemas = Array.isArray(languageSettings?.schemas) ? builtinSchemas.concat(languageSettings.schemas) : builtinSchemas;
@@ -77,9 +77,10 @@ export async function setup(
   // register code lens provider for import maps
   if (languageSettings?.importMapCodeLens ?? true) {
     languages.registerCodeLensProvider(languageId, {
-      provideCodeLenses: function(model, _token) {
-        const isImportMap = model.uri.scheme == "file"
-          && ["importmap.json", "import_map.json", "import-map.json", "importMap.json"].some((name) => model.uri.path === "/" + name);
+      provideCodeLenses: function (model, _token) {
+        const isImportMap =
+          model.uri.scheme == "file" &&
+          ["importmap.json", "import_map.json", "import-map.json", "importMap.json"].some((name) => model.uri.path === "/" + name);
         if (isImportMap) {
           const m2 = model.findNextMatch(`"imports":\\s*\\{`, { column: 1, lineNumber: 1 }, true, false, null, false);
           return {
@@ -108,7 +109,7 @@ export async function setup(
   editor.registerCommand("importmap:add-import", async (_accessor: any, model: monacoNS.editor.ITextModel) => {
     const specifier = await monaco.showInputBox({
       placeHolder: "Enter package name, e.g. react, react@18, react-dom@beta, etc.",
-      validateInput: (value) => /^[\w\-\.\/@]+$/.test(value) ? null : "Invalid package name",
+      validateInput: (value) => (/^[\w\-\.\/@]+$/.test(value) ? null : "Invalid package name"),
     });
     if (!specifier) {
       return;
@@ -118,12 +119,13 @@ export async function setup(
     const im = modelPath.endsWith(".json") ? parseFromJson(model.getValue()) : parseFromHtml(model.getValue());
 
     const items = await createModulePickItems(specifier, im.config?.cdn);
-    const imports = items.length > 1
-      ? await monaco.showQuickPick(items, {
-        placeHolder: "Select modules to add",
-        canPickMany: true,
-      })
-      : items;
+    const imports =
+      items.length > 1
+        ? await monaco.showQuickPick(items, {
+            placeHolder: "Select modules to add",
+            canPickMany: true,
+          })
+        : items;
     if (!imports || imports.length === 0) {
       return;
     }
@@ -132,13 +134,13 @@ export async function setup(
     await Promise.all(imports.map(async (module) => im.addImport(module.specifier, true)));
 
     const json = JSON.stringify(im.raw, null, 2);
-    const editor = monaco.editor.getEditors().filter(e => e.hasWidgetFocus())[0];
+    const editor = monaco.editor.getEditors().filter((e) => e.hasWidgetFocus())[0];
     const viewState = editor?.saveViewState();
     if (modelPath.endsWith(".html")) {
       const html = model.getValue();
       const newHtml = html.replace(
         /<script[^>]*? type="importmap"[^>]*?>[^]*?<\/script>/,
-        ['<script type="importmap">', ...json.split("\n").map((l) => "  " + l), "</script>"].join("\n  "),
+        ['<script type="importmap">', ...json.split("\n").map((l) => "  " + l), "</script>"].join("\n  ")
       );
       model.setValue(model.normalizeIndentation(newHtml));
     } else if (modelPath.endsWith(".json")) {
@@ -157,18 +159,18 @@ async function createModulePickItems(specifier: string, cdn?: string): Promise<(
     throw new Error(`Failed to fetch module metadata of ${specifier}: ${res.statusText}`);
   }
   const { name, version, exports } = await res.json();
-  const items: (monacoNS.QuickPickItem & { specifier: string })[] = [{
-    label: name,
-    description: "@" + version + " main-module",
-    picked: true,
-    specifier: name + "@" + version,
-  }];
+  const items: (monacoNS.QuickPickItem & { specifier: string })[] = [
+    {
+      label: name,
+      description: "@" + version + " main-module",
+      picked: true,
+      specifier: name + "@" + version,
+    },
+  ];
   if (exports) {
-    const subModules = (exports as string[]).filter((subModule) =>
-      subModule.startsWith("./")
-      && !subModule.endsWith(".json")
-      && !subModule.endsWith(".wasm")
-      && !subModule.endsWith(".css")
+    const subModules = (exports as string[]).filter(
+      (subModule) =>
+        subModule.startsWith("./") && !subModule.endsWith(".json") && !subModule.endsWith(".wasm") && !subModule.endsWith(".css")
     );
     subModules.forEach((subModule, index) => {
       const treeChar = index === subModules.length - 1 ? "└" : "├";
@@ -186,10 +188,10 @@ function createWebWorker(): Worker {
   const workerUrl: URL = new URL("./worker.mjs", import.meta.url);
   if (workerUrl.origin !== location.origin) {
     // create a blob url for cross-origin workers if the url is not same-origin
-    return new Worker(
-      URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })),
-      { type: "module", name: "json-worker" },
-    );
+    return new Worker(URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })), {
+      type: "module",
+      name: "json-worker",
+    });
   }
   return new Worker(workerUrl, { type: "module", name: "json-worker" });
 }

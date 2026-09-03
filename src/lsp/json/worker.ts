@@ -86,7 +86,7 @@ export class JSONWorker extends WorkerBase<{}, jsonService.JSONDocument> {
     uri: string,
     range: jsonService.Range | null,
     options: jsonService.FormattingOptions,
-    docText?: string,
+    docText?: string
   ): Promise<jsonService.TextEdit[] | null> {
     const document = docText ? jsonService.TextDocument.create(uri, "json", 0, docText) : this.getTextDocument(uri);
     if (!document) {
@@ -147,19 +147,14 @@ export class JSONWorker extends WorkerBase<{}, jsonService.JSONDocument> {
   async getColorPresentations(
     uri: string,
     color: jsonService.Color,
-    range: jsonService.Range,
+    range: jsonService.Range
   ): Promise<jsonService.ColorPresentation[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
       return null;
     }
     const jsonDocument = this.getLanguageDocument(document);
-    return this._languageService.getColorPresentations(
-      document,
-      jsonDocument,
-      color,
-      range,
-    );
+    return this._languageService.getColorPresentations(document, jsonDocument, color, range);
   }
 
   async getFoldingRanges(uri: string, context?: { rangeLimit?: number }): Promise<jsonService.FoldingRange[] | null> {

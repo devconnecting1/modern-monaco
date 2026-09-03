@@ -24,7 +24,7 @@ export async function setup(
   languageId: string,
   languageSettings?: HTMLLanguageSettings,
   formattingOptions?: FormattingOptions,
-  workspace?: Workspace,
+  workspace?: Workspace
 ) {
   const { editor, languages } = monaco;
   const { tabSize, insertSpaces, insertFinalNewline, trimFinalNewlines } = formattingOptions ?? {};
@@ -77,7 +77,7 @@ export async function setup(
     workerWithEmbeddedLanguages,
     ["<", "/", "=", '"'],
     workspace,
-    languageSettings?.diagnosticsOptions,
+    languageSettings?.diagnosticsOptions
   );
   client.registerAutoComplete(languageId, workerWithEmbeddedLanguages, [">", "/", "="]);
   client.registerColorPresentation(languageId, workerWithEmbeddedLanguages); // css color presentation
@@ -87,23 +87,9 @@ export async function setup(
   if (languageSettings?.importMapCodeLens ?? true) {
     languages.registerCodeLensProvider(languageId, {
       provideCodeLenses: (model, _token) => {
-        const m = model.findNextMatch(
-          `<script\\s[^>]*?type=['"]importmap['"]`,
-          { lineNumber: 4, column: 1 },
-          true,
-          false,
-          null,
-          false,
-        );
+        const m = model.findNextMatch(`<script\\s[^>]*?type=['"]importmap['"]`, { lineNumber: 4, column: 1 }, true, false, null, false);
         if (m) {
-          const m2 = model.findNextMatch(
-            `"imports":\\s*\\{`,
-            m.range.getEndPosition(),
-            true,
-            false,
-            null,
-            false,
-          );
+          const m2 = model.findNextMatch(`"imports":\\s*\\{`, m.range.getEndPosition(), true, false, null, false);
           return {
             lenses: [
               {
@@ -128,10 +114,10 @@ function createWebWorker(): Worker {
   const workerUrl: URL = new URL("./worker.mjs", import.meta.url);
   if (workerUrl.origin !== location.origin) {
     // create a blob url for cross-origin workers if the url is not same-origin
-    return new Worker(
-      URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })),
-      { type: "module", name: "html-worker" },
-    );
+    return new Worker(URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })), {
+      type: "module",
+      name: "html-worker",
+    });
   }
   return new Worker(workerUrl, { type: "module", name: "html-worker" });
 }

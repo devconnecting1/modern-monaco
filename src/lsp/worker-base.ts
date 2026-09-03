@@ -15,18 +15,20 @@ export class WorkerBase<Host = undefined, LanguageDocument = undefined> {
   constructor(
     ctx: monacoNS.worker.IWorkerContext<Host>,
     createData: WorkerCreateData,
-    createLanguageDocument?: (document: TextDocument) => LanguageDocument,
+    createLanguageDocument?: (document: TextDocument) => LanguageDocument
   ) {
     this.#ctx = ctx;
     if (createData.fs) {
       const dirs = new Set<string>(["/"]);
-      this.#fs = new Map(createData.fs.map((path) => {
-        const dir = path.slice(0, path.lastIndexOf("/"));
-        if (dir) {
-          dirs.add(dir);
-        }
-        return ["file://" + path, 1];
-      }));
+      this.#fs = new Map(
+        createData.fs.map((path) => {
+          const dir = path.slice(0, path.lastIndexOf("/"));
+          if (dir) {
+            dirs.add(dir);
+          }
+          return ["file://" + path, 1];
+        })
+      );
       for (const dir of dirs) {
         this.#fs.set("file://" + dir, 2);
       }

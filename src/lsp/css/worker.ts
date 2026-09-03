@@ -41,11 +41,12 @@ export class CSSWorker extends WorkerBase<{}, cssService.Stylesheet> {
       fileSystemProvider: this.getFileSystemProvider(),
     };
     this._formatSettings = createData.format ?? {};
-    this._languageService = language === "less"
-      ? cssService.getLESSLanguageService(languageServiceOptions)
-      : language === "scss"
-      ? cssService.getSCSSLanguageService(languageServiceOptions)
-      : cssService.getCSSLanguageService(languageServiceOptions);
+    this._languageService =
+      language === "less"
+        ? cssService.getLESSLanguageService(languageServiceOptions)
+        : language === "scss"
+          ? cssService.getSCSSLanguageService(languageServiceOptions)
+          : cssService.getCSSLanguageService(languageServiceOptions);
   }
 
   async doValidation(uri: string): Promise<cssService.Diagnostic[] | null> {
@@ -75,11 +76,7 @@ export class CSSWorker extends WorkerBase<{}, cssService.Stylesheet> {
     return this._languageService.doHover(document, position, stylesheet);
   }
 
-  async doCodeAction(
-    uri: string,
-    range: cssService.Range,
-    context: cssService.CodeActionContext,
-  ): Promise<cssService.CodeAction[] | null> {
+  async doCodeAction(uri: string, range: cssService.Range, context: cssService.CodeActionContext): Promise<cssService.CodeAction[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
       return null;
@@ -100,7 +97,7 @@ export class CSSWorker extends WorkerBase<{}, cssService.Stylesheet> {
   async doFormat(
     uri: string,
     range: cssService.Range | null,
-    options: cssService.CSSFormatConfiguration,
+    options: cssService.CSSFormatConfiguration
   ): Promise<cssService.TextEdit[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
@@ -150,10 +147,7 @@ export class CSSWorker extends WorkerBase<{}, cssService.Stylesheet> {
     return this._languageService.findDocumentLinks2(document, stylesheet, this);
   }
 
-  async findDocumentHighlights(
-    uri: string,
-    position: cssService.Position,
-  ): Promise<cssService.DocumentHighlight[] | null> {
+  async findDocumentHighlights(uri: string, position: cssService.Position): Promise<cssService.DocumentHighlight[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {
       return null;
@@ -174,7 +168,7 @@ export class CSSWorker extends WorkerBase<{}, cssService.Stylesheet> {
   async getColorPresentations(
     uri: string,
     color: cssService.Color,
-    range: cssService.Range,
+    range: cssService.Range
   ): Promise<cssService.ColorPresentation[] | null> {
     const document = this.getTextDocument(uri);
     if (!document) {

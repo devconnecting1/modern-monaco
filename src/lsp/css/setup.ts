@@ -17,14 +17,14 @@ export async function setup(
   languageId: string,
   languageSettings?: CSSLanguageSettings,
   formattingOptions?: FormattingOptions,
-  workspace?: Workspace,
+  workspace?: Workspace
 ) {
   const validProperties = languageSettings?.validProperties;
   const dataProviders = { ...languageSettings?.dataProviders };
   if (validProperties) {
     dataProviders["#valid-properties"] = {
       version: 1.1,
-      properties: validProperties.map(property => ({ name: property })),
+      properties: validProperties.map((property) => ({ name: property })),
     };
   }
   const { tabSize, insertSpaces, insertFinalNewline, trimFinalNewlines } = formattingOptions ?? {};
@@ -65,10 +65,10 @@ function createWebWorker(): Worker {
   const workerUrl: URL = new URL("./worker.mjs", import.meta.url);
   if (workerUrl.origin !== location.origin) {
     // create a blob url for cross-origin workers if the url is not same-origin
-    return new Worker(
-      URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })),
-      { type: "module", name: "css-worker" },
-    );
+    return new Worker(URL.createObjectURL(new Blob([`import "${workerUrl.href}"`], { type: "application/javascript" })), {
+      type: "module",
+      name: "css-worker",
+    });
   }
   return new Worker(workerUrl, { type: "module", name: "css-worker" });
 }

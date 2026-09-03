@@ -9,15 +9,4 @@ import htmlJsonScript from "./(html)json-script-tag.json";
 import inlineHtml from "./(js)inline-html.json";
 import inlineCSS from "./(js)inline-css.json";
 
-export const syntaxes = [
-  html,
-  css,
-  javascript,
-  typescript,
-  jsx,
-  tsx,
-  json,
-  htmlJsonScript,
-  inlineHtml,
-  inlineCSS,
-];
+export const syntaxes = [html, css, javascript, typescript, jsx, tsx, json, htmlJsonScript, inlineHtml, inlineCSS];
