@@ -41,6 +41,10 @@
   ],
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/lazy.html"
+    },
+    {
       "source": "/lazy",
       "destination": "/lazy.html"
     },
