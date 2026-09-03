@@ -5,10 +5,9 @@ scripts/
 examples/
 types/
 *.md
-*.json
-!vercel.json
 bun.lock
 dprint.json
 tsconfig.json
 .gitignore
 LICENSE
+language-configurations.json
