@@ -6,7 +6,6 @@
   <title>AI Agent IDE</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
       --bg-primary: #1e1e1e;
       --bg-secondary: #252526;
@@ -24,433 +23,100 @@
       --status-fg: #ffffff;
       --activity-fg: #858585;
       --activity-active: #ffffff;
-      --scrollbar-bg: transparent;
-      --scrollbar-thumb: rgba(121,121,121,0.4);
     }
-
-    html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--foreground); }
 
     #app {
       display: grid;
       grid-template-rows: 35px 1fr 22px;
       grid-template-columns: 48px 250px 1fr;
-      grid-template-areas:
-        "titlebar titlebar titlebar"
-        "activitybar sidebar editor"
-        "statusbar statusbar statusbar";
+      grid-template-areas: "titlebar titlebar titlebar" "activitybar sidebar editor" "statusbar statusbar statusbar";
       height: 100vh;
-      background: var(--bg-primary);
-      color: var(--foreground);
     }
 
-    /* Titlebar */
-    .titlebar {
-      grid-area: titlebar;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
-      padding: 0 12px;
-      user-select: none;
-      -webkit-app-region: drag;
-    }
-    .titlebar-center {
-      font-size: 11px;
-      color: var(--foreground-dim);
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-    .titlebar-left, .titlebar-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      -webkit-app-region: no-drag;
-    }
-    .titlebar-btn {
-      background: none;
-      border: none;
-      color: var(--foreground-dim);
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
+    .titlebar { grid-area: titlebar; display: flex; align-items: center; justify-content: space-between; background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0 12px; user-select: none; }
+    .titlebar-center { font-size: 11px; color: var(--foreground-dim); position: absolute; left: 50%; transform: translateX(-50%); }
+    .titlebar-left, .titlebar-right { display: flex; align-items: center; gap: 8px; }
+    .titlebar-btn { background: none; border: none; color: var(--foreground-dim); cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
     .titlebar-btn:hover { background: var(--bg-hover); color: var(--foreground); }
 
-    /* Activity Bar */
-    .activitybar {
-      grid-area: activitybar;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 4px 0;
-      gap: 2px;
-      background: var(--bg-secondary);
-      border-right: 1px solid var(--border);
-    }
-    .activitybar-item {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: none;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 18px;
-      color: var(--activity-fg);
-      position: relative;
-    }
+    .activitybar { grid-area: activitybar; display: flex; flex-direction: column; align-items: center; padding: 4px 0; gap: 2px; background: var(--bg-secondary); border-right: 1px solid var(--border); }
+    .activitybar-item { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; border-radius: 4px; color: var(--activity-fg); position: relative; }
+    .activitybar-item svg { width: 22px; height: 22px; fill: currentColor; }
     .activitybar-item:hover { color: var(--foreground); }
     .activitybar-item.active { color: var(--activity-active); }
-    .activitybar-item.active::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 8px;
-      bottom: 8px;
-      width: 2px;
-      background: var(--foreground);
-      border-radius: 0 2px 2px 0;
-    }
+    .activitybar-item.active::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; background: var(--foreground); border-radius: 0 2px 2px 0; }
     .activitybar-spacer { flex: 1; }
 
-    /* Sidebar */
-    .sidebar {
-      grid-area: sidebar;
-      display: flex;
-      flex-direction: column;
-      background: var(--bg-secondary);
-      border-right: 1px solid var(--border);
-      overflow: hidden;
-    }
-    .sidebar-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 12px;
-      height: 35px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--foreground);
-      border-bottom: 1px solid var(--border);
-    }
-    .sidebar-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px 0;
-    }
-    .file-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px 4px 24px;
-      cursor: pointer;
-      font-size: 13px;
-      color: var(--foreground);
-      white-space: nowrap;
-    }
+    .sidebar { grid-area: sidebar; display: flex; flex-direction: column; background: var(--bg-secondary); border-right: 1px solid var(--border); overflow: hidden; }
+    .sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 35px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--foreground); border-bottom: 1px solid var(--border); }
+    .sidebar-content { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .file-item { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 24px; cursor: pointer; font-size: 13px; color: var(--foreground); white-space: nowrap; }
     .file-item:hover { background: var(--bg-hover); }
     .file-item.active { background: var(--bg-hover); }
-    .file-icon { font-size: 14px; opacity: 0.7; }
-    .folder-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--foreground);
-    }
+    .file-icon { font-size: 10px; font-weight: 700; }
+    .folder-item { display: flex; align-items: center; gap: 6px; padding: 4px 12px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--foreground); }
     .folder-item:hover { background: var(--bg-hover); }
 
-    /* Editor Area */
-    .editor-area {
-      grid-area: editor;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* Editor Tabs */
-    .editor-tabs {
-      display: flex;
-      align-items: center;
-      height: 35px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
-    }
+    .editor-area { grid-area: editor; display: flex; flex-direction: column; overflow: hidden; }
+    .editor-tabs { display: flex; align-items: center; height: 35px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); overflow-x: auto; }
     .editor-tabs::-webkit-scrollbar { height: 0; }
-    .editor-tab {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 0 12px;
-      height: 35px;
-      cursor: pointer;
-      font-size: 12px;
-      white-space: nowrap;
-      border-right: 1px solid var(--border);
-      color: var(--foreground-dim);
-      background: var(--tab-inactive);
-      min-width: fit-content;
-    }
-    .editor-tab.active {
-      color: var(--foreground-bright);
-      background: var(--tab-active);
-      border-top: 1px solid var(--accent);
-    }
+    .editor-tab { display: flex; align-items: center; gap: 6px; padding: 0 12px; height: 35px; cursor: pointer; font-size: 12px; white-space: nowrap; border-right: 1px solid var(--border); color: var(--foreground-dim); background: var(--tab-inactive); min-width: fit-content; }
+    .editor-tab.active { color: var(--foreground-bright); background: var(--tab-active); border-top: 1px solid var(--accent); }
     .editor-tab:hover:not(.active) { background: var(--bg-hover); }
-    .editor-tab .close {
-      opacity: 0;
-      margin-left: 4px;
-      font-size: 14px;
-      border-radius: 3px;
-      width: 18px;
-      height: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    .editor-tab .close { opacity: 0; margin-left: 4px; font-size: 14px; border-radius: 3px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
     .editor-tab:hover .close { opacity: 0.5; }
     .editor-tab .close:hover { opacity: 1; background: rgba(255,255,255,0.1); }
-    .tab-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #e2c08d;
-    }
+    .editor-pane { flex: 1; position: relative; overflow: hidden; background: var(--bg-primary); }
 
-    /* Editor Pane */
-    .editor-pane {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Panel (bottom) */
-    .panel {
-      position: fixed;
-      bottom: 22px;
-      left: 298px;
-      right: 0;
-      height: 0;
-      background: var(--bg-primary);
-      border-top: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      transition: height 0.15s ease;
-      z-index: 10;
-    }
+    .panel { position: fixed; bottom: 22px; left: 298px; right: 0; height: 0; background: var(--bg-primary); border-top: 1px solid var(--border); display: flex; flex-direction: column; transition: height 0.15s ease; z-index: 10; }
     .panel.open { height: 250px; }
-    .panel-tabs {
-      display: flex;
-      align-items: center;
-      height: 35px;
-      padding: 0 8px;
-      gap: 2px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .panel-tab {
-      padding: 4px 12px;
-      cursor: pointer;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      border-radius: 3px;
-      color: var(--foreground-dim);
-      background: none;
-      border: none;
-    }
+    .panel-tabs { display: flex; align-items: center; height: 35px; padding: 0 8px; gap: 2px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .panel-tab { padding: 4px 12px; cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; border-radius: 3px; color: var(--foreground-dim); background: none; border: none; }
     .panel-tab:hover { color: var(--foreground); }
     .panel-tab.active { color: var(--foreground-bright); background: var(--bg-hover); }
-    .panel-content {
-      flex: 1;
-      overflow: auto;
-      padding: 8px 12px;
-      font-family: 'Cascadia Code', 'Fira Code', monospace;
-      font-size: 12px;
-      color: var(--foreground);
-    }
+    .panel-content { flex: 1; overflow: auto; padding: 8px 12px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 12px; color: var(--foreground); }
 
-    /* Statusbar */
-    .statusbar {
-      grid-area: statusbar;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 22px;
-      padding: 0 8px;
-      background: var(--status-bg);
-      color: var(--status-fg);
-      font-size: 12px;
-      user-select: none;
-    }
-    .statusbar-left, .statusbar-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .statusbar { grid-area: statusbar; display: flex; align-items: center; justify-content: space-between; height: 22px; padding: 0 8px; background: var(--status-bg); color: var(--status-fg); font-size: 12px; user-select: none; }
+    .statusbar-left, .statusbar-right { display: flex; align-items: center; gap: 12px; }
     .statusbar-item { cursor: default; padding: 0 4px; }
     .statusbar-item.clickable { cursor: pointer; }
     .statusbar-item.clickable:hover { background: rgba(255,255,255,0.12); }
 
-    /* AI Chat Sidebar (right) */
-    .ai-panel {
-      position: fixed;
-      top: 35px;
-      right: 0;
-      bottom: 22px;
-      width: 0;
-      background: var(--bg-secondary);
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      transition: width 0.15s ease;
-      z-index: 20;
-      overflow: hidden;
-    }
+    .ai-panel { position: fixed; top: 35px; right: 0; bottom: 22px; width: 0; background: var(--bg-secondary); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: width 0.15s ease; z-index: 20; overflow: hidden; }
     .ai-panel.open { width: 380px; }
-    .ai-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 12px;
-      height: 35px;
-      font-size: 12px;
-      font-weight: 600;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .ai-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .ai-msg {
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      line-height: 1.5;
-      max-width: 95%;
-    }
-    .ai-msg.user {
-      background: var(--accent);
-      color: white;
-      align-self: flex-end;
-      border-bottom-right-radius: 2px;
-    }
-    .ai-msg.assistant {
-      background: var(--bg-tertiary);
-      color: var(--foreground);
-      align-self: flex-start;
-      border-bottom-left-radius: 2px;
-    }
-    .ai-msg.system {
-      background: transparent;
-      color: var(--foreground-dim);
-      font-size: 11px;
-      text-align: center;
-      align-self: center;
-      padding: 4px 8px;
-    }
-    .ai-input-area {
-      padding: 8px 12px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-    .ai-input {
-      flex: 1;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 12px;
-      color: var(--foreground);
-      font-size: 13px;
-      outline: none;
-      resize: none;
-      font-family: inherit;
-    }
+    .ai-header { display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 35px; font-size: 12px; font-weight: 600; border-bottom: 1px solid var(--border); flex-shrink: 0; color: var(--foreground); }
+    .ai-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+    .ai-msg { padding: 8px 12px; border-radius: 8px; font-size: 13px; line-height: 1.5; max-width: 95%; }
+    .ai-msg.user { background: var(--accent); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .ai-msg.assistant { background: var(--bg-tertiary); color: var(--foreground); align-self: flex-start; border-bottom-left-radius: 2px; }
+    .ai-msg.system { background: transparent; color: var(--foreground-dim); font-size: 11px; text-align: center; align-self: center; padding: 4px 8px; }
+    .ai-input-area { padding: 8px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+    .ai-input { flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--foreground); font-size: 13px; outline: none; resize: none; font-family: inherit; }
     .ai-input:focus { border-color: var(--accent); }
-    .ai-send {
-      background: var(--accent);
-      border: none;
-      border-radius: 6px;
-      padding: 8px 16px;
-      color: white;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-    }
+    .ai-send { background: var(--accent); border: none; border-radius: 6px; padding: 8px 16px; color: white; cursor: pointer; font-size: 13px; font-weight: 500; }
     .ai-send:hover { background: var(--accent-hover); }
 
-    /* Command Palette */
-    .command-palette-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 100;
-      justify-content: center;
-      padding-top: 80px;
-    }
+    .command-palette-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; padding-top: 80px; }
     .command-palette-overlay.open { display: flex; }
-    .command-palette {
-      width: 500px;
-      max-height: 400px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .command-palette input {
-      background: transparent;
-      border: none;
-      border-bottom: 1px solid var(--border);
-      padding: 12px 16px;
-      color: var(--foreground);
-      font-size: 14px;
-      outline: none;
-    }
-    .command-palette-results {
-      flex: 1;
-      overflow-y: auto;
-      padding: 4px;
-    }
-    .command-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 12px;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 13px;
-    }
+    .command-palette { width: 500px; max-height: 400px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); display: flex; flex-direction: column; overflow: hidden; }
+    .command-palette input { background: var(--bg-tertiary); border: none; border-bottom: 1px solid var(--border); padding: 12px 16px; color: var(--foreground); font-size: 14px; outline: none; }
+    .command-palette input::placeholder { color: var(--foreground-dim); }
+    .command-palette-results { flex: 1; overflow-y: auto; padding: 4px; }
+    .command-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 13px; color: var(--foreground); }
     .command-item:hover, .command-item.selected { background: var(--bg-hover); }
     .command-item .shortcut { color: var(--foreground-dim); font-size: 11px; }
 
-    /* Scrollbar */
     ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
-    ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(121,121,121,0.4); border-radius: 5px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(121,121,121,0.7); }
+
+    #loading-overlay { position: fixed; inset: 0; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; z-index: 200; flex-direction: column; gap: 16px; }
+    #loading-overlay.hidden { display: none; }
+    #loading-overlay .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    #loading-overlay .text { color: var(--foreground-dim); font-size: 13px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
   <script type="importmap">
   {
@@ -465,48 +131,58 @@
   </script>
 </head>
 <body>
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="text">Loading Monaco Editor...</div>
+  </div>
+
   <div id="app">
-    <!-- Titlebar -->
     <div class="titlebar">
       <div class="titlebar-left">
         <span style="font-weight:600;font-size:12px;">AI Agent IDE</span>
-        <button class="titlebar-btn" onclick="location.reload()">File</button>
+        <button class="titlebar-btn">File</button>
         <button class="titlebar-btn">Edit</button>
         <button class="titlebar-btn">View</button>
         <button class="titlebar-btn">Help</button>
       </div>
-      <div class="titlebar-center">AI Agent IDE — modern-monaco</div>
+      <div class="titlebar-center">AI Agent IDE</div>
       <div class="titlebar-right">
         <button class="titlebar-btn" id="btn-command" title="Command Palette (Ctrl+Shift+P)">Commands</button>
       </div>
     </div>
 
-    <!-- Activity Bar -->
     <div class="activitybar">
-      <button class="activitybar-item active" data-view="explorer" title="Explorer">Files</button>
-      <button class="activitybar-item" data-view="search" title="Search">Search</button>
-      <button class="activitybar-item" data-view="git" title="Source Control">Git</button>
-      <button class="activitybar-item" data-view="extensions" title="Extensions">Ext</button>
+      <button class="activitybar-item active" data-view="explorer" title="Explorer (Ctrl+Shift+E)">
+        <svg viewBox="0 0 24 24"><path d="M17.5 0h-9L7 1.5V6H2.5L1 7.5v15.07L2.5 24h12.07L16 22.57V18h4.7l1.3-1.43V4.5L17.5 0zm0 2.12l2.38 2.38H17.5V2.12zm-3 20.38h-12v-15H7v9.07L8.5 18h6v4.5zm6-6h-12v-15H16V6h4.5v10.5z"/></svg>
+      </button>
+      <button class="activitybar-item" data-view="search" title="Search (Ctrl+Shift+F)">
+        <svg viewBox="0 0 24 24"><path d="M15.25 0a8.25 8.25 0 0 0-6.18 13.72L1 21.79l1.42 1.42 8.07-8.07A8.25 8.25 0 1 0 15.25 0zm0 15a6.75 6.75 0 1 1 0-13.5 6.75 6.75 0 0 1 0 13.5z"/></svg>
+      </button>
+      <button class="activitybar-item" data-view="git" title="Source Control (Ctrl+Shift+G)">
+        <svg viewBox="0 0 24 24"><path d="M21.007 8.222A3.738 3.738 0 0 0 15.045 5.2a3.737 3.737 0 0 0 1.156 6.583 2.988 2.988 0 0 1-2.668 1.67h-2.99a4.456 4.456 0 0 0-2.989 1.165V7.559a3.738 3.738 0 1 0-1.494 0v8.856a3.742 3.742 0 1 0 1.71.299 2.99 2.99 0 0 1 2.773-1.774h2.99a4.489 4.489 0 0 0 4.223-3.09 3.736 3.736 0 0 0 3.25-3.63zM4.565 3.738a2.244 2.244 0 1 1 4.488 0 2.244 2.244 0 0 1-4.488 0zm4.488 16.494a2.244 2.244 0 1 1-4.488 0 2.244 2.244 0 0 1 4.488 0zm8.221-9.734a2.244 2.244 0 1 1 0-4.489 2.244 2.244 0 0 1 0 4.489z"/></svg>
+      </button>
+      <button class="activitybar-item" data-view="extensions" title="Extensions (Ctrl+Shift+X)">
+        <svg viewBox="0 0 24 24"><path d="M13.5 1.5L15 0h7.5L24 1.5V9l-1.5 1.5H15L13.5 9V1.5zm1.5 0V9h7.5V1.5H15zM0 15L1.5 13.5H9L10.5 15v7.5L9 24H1.5L0 22.5V15zm1.5 0v7.5H9V15H1.5zM13.5 15L15 13.5h7.5L24 15v7.5l-1.5 1.5H15L13.5 22.5V15zm1.5 0v7.5h7.5V15H15zM0 1.5L1.5 0H9L10.5 1.5V9L9 10.5H1.5L0 9V1.5zm1.5 0V9H9V1.5H1.5z"/></svg>
+      </button>
       <div class="activitybar-spacer"></div>
-      <button class="activitybar-item" id="btn-ai" title="AI Assistant (Ctrl+Shift+A)">AI</button>
-      <button class="activitybar-item" title="Settings">Settings</button>
+      <button class="activitybar-item" id="btn-ai" title="AI Assistant (Ctrl+Shift+A)">
+        <svg viewBox="0 0 24 24"><path d="M21 11a1 1 0 0 1-1 1h-1v1a1 1 0 0 1-2 0v-1h-1a1 1 0 0 1 0-2h1V9a1 1 0 0 1 2 0v1h1a1 1 0 0 1 1 1zM12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm-1 4a1 1 0 0 0-1 1v2H8a1 1 0 0 0 0 2h2v2a1 1 0 0 0 2 0v-2h2a1 1 0 0 0 0-2h-2V7a1 1 0 0 0-1-1z"/></svg>
+      </button>
+      <button class="activitybar-item" title="Settings">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
+      </button>
     </div>
 
-    <!-- Sidebar -->
     <div class="sidebar">
-      <div class="sidebar-header">
-        <span>EXPLORER</span>
-      </div>
+      <div class="sidebar-header"><span>EXPLORER</span></div>
       <div class="sidebar-content" id="file-tree"></div>
     </div>
 
-    <!-- Editor Area -->
     <div class="editor-area">
       <div class="editor-tabs" id="editor-tabs"></div>
       <div class="editor-pane" id="editor-pane"></div>
     </div>
 
-    <!-- Statusbar -->
     <div class="statusbar">
       <div class="statusbar-left">
         <span class="statusbar-item clickable" id="status-branch">main</span>
@@ -522,11 +198,10 @@
     </div>
   </div>
 
-  <!-- AI Chat Panel -->
   <div class="ai-panel" id="ai-panel">
     <div class="ai-header">
       <span>AI Assistant</span>
-      <button class="titlebar-btn" id="close-ai">x</button>
+      <button class="titlebar-btn" id="close-ai">×</button>
     </div>
     <div class="ai-messages" id="ai-messages">
       <div class="ai-msg system">AI Agent IDE ready. Ask me anything about your code.</div>
@@ -537,7 +212,6 @@
     </div>
   </div>
 
-  <!-- Command Palette -->
   <div class="command-palette-overlay" id="cmd-overlay">
     <div class="command-palette">
       <input type="text" id="cmd-input" placeholder="Type a command...">
@@ -545,7 +219,6 @@
     </div>
   </div>
 
-  <!-- Panel -->
   <div class="panel" id="panel">
     <div class="panel-tabs">
       <button class="panel-tab active" data-panel="terminal">Terminal</button>
@@ -553,14 +226,13 @@
       <button class="panel-tab" data-panel="problems">Problems</button>
     </div>
     <div class="panel-content" id="panel-content">
-      <div>$ <span id="terminal-cursor">_</span></div>
+      <div style="color:var(--foreground-dim);">$ <span id="terminal-cursor">_</span></div>
     </div>
   </div>
 
   <script type="module">
     import { lazy, Workspace } from "modern-monaco";
 
-    // --- File System ---
     const files = {
       "src/index.ts": {
         content: `import { createApp } from "./app";\n\nconst app = createApp();\napp.mount("#root");\n\nconsole.log("App started");`,
@@ -593,7 +265,6 @@
     let editor = null;
     let monacoNs = null;
 
-    // --- Init Workspace ---
     const workspace = new Workspace({
       name: "ai-agent-ide",
       initialFiles: Object.fromEntries(
@@ -602,11 +273,9 @@
       entryFile: "src/index.ts",
     });
 
-    // --- Render File Tree ---
     function renderFileTree() {
       const tree = document.getElementById("file-tree");
       tree.innerHTML = "";
-
       const folders = {};
       for (const [path] of Object.entries(files)) {
         const parts = path.split("/");
@@ -616,52 +285,53 @@
           folders[folder].push(parts.slice(1).join("/"));
         }
       }
-
       for (const [folder, folderFiles] of Object.entries(folders)) {
         const folderEl = document.createElement("div");
         folderEl.className = "folder-item";
-        folderEl.innerHTML = `<span class="file-icon"></span> ${folder}`;
+        folderEl.textContent = folder;
         tree.appendChild(folderEl);
-
         for (const file of folderFiles) {
           const fullPath = `${folder}/${file}`;
           const item = document.createElement("div");
           item.className = "file-item" + (currentFile === fullPath ? " active" : "");
-          const icon = file.endsWith(".ts") ? "TS" : file.endsWith(".json") ? "{}" : "#";
-          const color = file.endsWith(".ts") ? "#3178c6" : file.endsWith(".json") ? "#f5a623" : "#858585";
-          item.innerHTML = `<span class="file-icon" style="color:${color};font-size:10px;font-weight:700;">${icon}</span> ${file}`;
+          const ext = file.split(".").pop();
+          const color = ext === "ts" ? "#3178c6" : ext === "json" ? "#f5a623" : "#858585";
+          item.innerHTML = `<span class="file-icon" style="color:${color};">${ext.toUpperCase()}</span> ${file}`;
           item.onclick = () => openFile(fullPath);
           tree.appendChild(item);
         }
       }
     }
 
-    // --- Open File ---
     async function openFile(path) {
       if (!files[path]) return;
-
       currentFile = path;
       if (!openTabs.includes(path)) openTabs.push(path);
-
       renderFileTree();
       renderTabs();
 
       const file = files[path];
-
-      // Update status
       document.getElementById("status-language").textContent =
         file.language === "typescript" ? "TypeScript" :
         file.language === "json" ? "JSON" :
         file.language === "markdown" ? "Markdown" : file.language;
 
       if (!monacoNs) {
-        monacoNs = await lazy({
-          workspace,
-          defaultTheme: "vitesse-dark",
-        });
+        try {
+          monacoNs = await lazy({
+            workspace,
+            defaultTheme: "vitesse-dark",
+          });
+        } catch (e) {
+          console.error("Failed to init Monaco:", e);
+          document.getElementById("editor-pane").innerHTML =
+            '<div style="padding:20px;color:var(--foreground-dim);">Failed to load Monaco Editor. Check console.</div>';
+          return;
+        }
       }
 
       const pane = document.getElementById("editor-pane");
+
       if (!editor) {
         editor = monacoNs.editor.create(pane, {
           automaticLayout: true,
@@ -685,8 +355,7 @@
         });
       }
 
-      // Create or get model
-      const uri = monacoNs.Uri.parse(path);
+      const uri = monacoNs.Uri.parse("file:///" + path);
       let model = monacoNs.editor.getModel(uri);
       if (model) {
         model.setValue(file.content);
@@ -697,22 +366,14 @@
       editor.focus();
     }
 
-    // --- Render Tabs ---
     function renderTabs() {
       const tabsEl = document.getElementById("editor-tabs");
       tabsEl.innerHTML = "";
-
       for (const path of openTabs) {
-        const file = files[path];
         const tab = document.createElement("div");
         tab.className = "editor-tab" + (path === currentFile ? " active" : "");
         const name = path.split("/").pop();
-
-        tab.innerHTML = `
-          <span>${name}</span>
-          <span class="close" data-path="${path}">&times;</span>
-        `;
-
+        tab.innerHTML = `<span>${name}</span><span class="close" data-path="${path}">&times;</span>`;
         tab.onclick = (e) => {
           if (e.target.classList.contains("close")) {
             closeTab(path);
@@ -720,12 +381,10 @@
             openFile(path);
           }
         };
-
         tabsEl.appendChild(tab);
       }
     }
 
-    // --- Close Tab ---
     function closeTab(path) {
       openTabs = openTabs.filter((t) => t !== path);
       if (currentFile === path) {
@@ -740,7 +399,6 @@
       renderFileTree();
     }
 
-    // --- Activity Bar ---
     document.querySelectorAll(".activitybar-item[data-view]").forEach((btn) => {
       btn.onclick = () => {
         document.querySelectorAll(".activitybar-item[data-view]").forEach((b) => b.classList.remove("active"));
@@ -748,7 +406,6 @@
       };
     });
 
-    // --- AI Panel ---
     const aiPanel = document.getElementById("ai-panel");
     const aiMessages = document.getElementById("ai-messages");
     const aiInput = document.getElementById("ai-input");
@@ -772,10 +429,7 @@
 
     document.getElementById("ai-send").onclick = () => sendAiMessage();
     aiInput.onkeydown = (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendAiMessage();
-      }
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendAiMessage(); }
     };
 
     function sendAiMessage() {
@@ -783,13 +437,11 @@
       if (!text) return;
       addAiMessage("user", text);
       aiInput.value = "";
-
       setTimeout(() => {
-        addAiMessage("assistant", `I received your message: "${text}". I'm an AI agent ready to help with your code. In a full implementation, this would connect to an LLM API.`);
+        addAiMessage("assistant", `I received: "${text}". I'm an AI agent ready to help with your code.`);
       }, 500);
     }
 
-    // --- Panel ---
     const panel = document.getElementById("panel");
     document.querySelectorAll(".panel-tab").forEach((tab) => {
       tab.onclick = () => {
@@ -798,7 +450,6 @@
       };
     });
 
-    // --- Command Palette ---
     const cmdOverlay = document.getElementById("cmd-overlay");
     const cmdInput = document.getElementById("cmd-input");
     const cmdResults = document.getElementById("cmd-results");
@@ -818,9 +469,7 @@
 
     function renderCommands(filter = "") {
       cmdResults.innerHTML = "";
-      const filtered = commands.filter((c) =>
-        c.label.toLowerCase().includes(filter.toLowerCase())
-      );
+      const filtered = commands.filter((c) => c.label.toLowerCase().includes(filter.toLowerCase()));
       for (const cmd of filtered) {
         const el = document.createElement("div");
         el.className = "command-item";
@@ -844,40 +493,20 @@
       renderCommands();
       cmdInput.focus();
     };
-
-    cmdOverlay.onclick = (e) => {
-      if (e.target === cmdOverlay) cmdOverlay.classList.remove("open");
-    };
-
+    cmdOverlay.onclick = (e) => { if (e.target === cmdOverlay) cmdOverlay.classList.remove("open"); };
     cmdInput.oninput = () => renderCommands(cmdInput.value);
-    cmdInput.onkeydown = (e) => {
-      if (e.key === "Escape") cmdOverlay.classList.remove("open");
-    };
+    cmdInput.onkeydown = (e) => { if (e.key === "Escape") cmdOverlay.classList.remove("open"); };
 
-    // --- Keyboard Shortcuts ---
     document.onkeydown = (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === "P") {
-        e.preventDefault();
-        document.getElementById("btn-command").click();
-      }
-      if (e.ctrlKey && e.shiftKey && e.key === "A") {
-        e.preventDefault();
-        document.getElementById("btn-ai").click();
-      }
-      if (e.ctrlKey && e.key === "`") {
-        e.preventDefault();
-        panel.classList.toggle("open");
-      }
-      if (e.ctrlKey && e.key === "b") {
-        e.preventDefault();
-        const sidebar = document.querySelector(".sidebar");
-        sidebar.style.display = sidebar.style.display === "none" ? "" : "none";
-      }
+      if (e.ctrlKey && e.shiftKey && e.key === "P") { e.preventDefault(); document.getElementById("btn-command").click(); }
+      if (e.ctrlKey && e.shiftKey && e.key === "A") { e.preventDefault(); document.getElementById("btn-ai").click(); }
+      if (e.ctrlKey && e.key === "`") { e.preventDefault(); panel.classList.toggle("open"); }
+      if (e.ctrlKey && e.key === "b") { e.preventDefault(); const s = document.querySelector(".sidebar"); s.style.display = s.style.display === "none" ? "" : "none"; }
     };
 
-    // --- Init ---
     renderFileTree();
-    openFile("src/index.ts");
+    await openFile("src/index.ts");
+    document.getElementById("loading-overlay").classList.add("hidden");
   </script>
 </body>
 </html>
