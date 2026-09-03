@@ -231,7 +231,7 @@
   </div>
 
   <script type="module">
-    import { lazy, Workspace } from "modern-monaco";
+    import { init, Workspace } from "modern-monaco";
 
     const files = {
       "src/index.ts": {
@@ -318,7 +318,7 @@
 
       if (!monacoNs) {
         try {
-          monacoNs = await lazy({
+          monacoNs = await init({
             workspace,
             defaultTheme: "vitesse-dark",
           });
@@ -326,6 +326,7 @@
           console.error("Failed to init Monaco:", e);
           document.getElementById("editor-pane").innerHTML =
             '<div style="padding:20px;color:var(--foreground-dim);">Failed to load Monaco Editor. Check console.</div>';
+          document.getElementById("loading-overlay").classList.add("hidden");
           return;
         }
       }
