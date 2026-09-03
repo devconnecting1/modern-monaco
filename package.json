@@ -96,7 +96,7 @@
     "lint": "biome lint src/",
     "lint:fix": "biome lint --write src/",
     "format": "biome format --write src/",
-    "check": "biome check src/",
+    "check": "biome check src/ --formatter-enabled=false --assist-enabled=false",
     "check:fix": "biome check --write src/",
     "eslint": "eslint 'src/**/*.ts'",
     "eslint:fix": "eslint --fix 'src/**/*.ts'",

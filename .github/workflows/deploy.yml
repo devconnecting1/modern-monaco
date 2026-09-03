@@ -30,6 +30,7 @@ jobs:
         run: bun run prepublishOnly
 
       - name: Deploy to Vercel
+        if: ${{ env.HAS_VERCEL_SECRETS == 'true' }}
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -37,3 +38,11 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: "--prod"
           working-directory: ./
+        env:
+          HAS_VERCEL_SECRETS: ${{ secrets.VERCEL_TOKEN != '' }}
+
+      - name: Skip Deploy
+        if: ${{ env.HAS_VERCEL_SECRETS != 'true' }}
+        run: echo "Vercel secrets not configured. Skipping deploy."
+        env:
+          HAS_VERCEL_SECRETS: ${{ secrets.VERCEL_TOKEN != '' }}

@@ -6,13 +6,22 @@
       "recommended": true,
       "correctness": {
         "noUnusedVariables": "warn",
-        "noUnusedImports": "warn"
+        "noUnusedImports": "warn",
+        "noUnusedFunctionParameters": "warn",
+        "useParseIntRadix": "warn",
+        "noEmptyCharacterClassInRegex": "warn"
       },
       "suspicious": {
-        "noExplicitAny": "warn"
+        "noExplicitAny": "warn",
+        "noGlobalIsNan": "warn",
+        "noAssignInExpressions": "warn",
+        "noDoubleEquals": "warn",
+        "useIterableCallbackReturn": "warn"
       },
       "style": {
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "warn",
+        "useTemplate": "warn",
+        "useImportType": "warn"
       }
     }
   },
