@@ -1,4 +1,4 @@
-export const enum Parts {
+export enum Parts {
   TITLEBAR_PART = "ide.parts.titlebar",
   BANNER_PART = "ide.parts.banner",
   ACTIVITYBAR_PART = "ide.parts.activitybar",
@@ -9,19 +9,19 @@ export const enum Parts {
   STATUSBAR_PART = "ide.parts.statusbar",
 }
 
-export const enum Position {
+export enum Position {
   LEFT = "left",
   RIGHT = "right",
   TOP = "top",
   BOTTOM = "bottom",
 }
 
-export const enum Orientation {
+export enum Orientation {
   HORIZONTAL = "horizontal",
   VERTICAL = "vertical",
 }
 
-export const enum Sizing {
+export enum Sizing {
   DISTRIBUTE = "distribute",
   SPLIT = "split",
   AUTO = "auto",
@@ -50,7 +50,7 @@ export interface LayoutGridBranchDescriptor {
   readonly size?: number;
 }
 
-export const enum EditorGroupSizing {
+export enum EditorGroupSizing {
   DISTRIBUTE = "distribute",
   SPLIT = "split",
   AUTO = "auto",

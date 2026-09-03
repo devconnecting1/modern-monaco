@@ -26,7 +26,7 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/lazy.html"
+      "destination": "/index.html"
     }
   ]
 }

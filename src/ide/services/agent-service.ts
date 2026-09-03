@@ -1,6 +1,6 @@
 import type { IDisposable } from "../event";
 
-export const enum AgentStatus {
+export enum AgentStatus {
   IDLE = "idle",
   THINKING = "thinking",
   EXECUTING = "executing",

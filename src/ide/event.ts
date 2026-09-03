@@ -2,9 +2,7 @@ export interface IDisposable {
   dispose(): void;
 }
 
-export interface IEvent<T> {
-  (listener: (e: T) => void): IDisposable;
-}
+export type IEvent<T> = (listener: (e: T) => void) => IDisposable
 
 export class Emitter<T> implements IDisposable {
   private _listeners = new Set<(e: T) => void>();

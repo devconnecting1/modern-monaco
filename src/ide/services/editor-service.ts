@@ -26,7 +26,7 @@ export interface ICodeEditor {
   readonly dispose: () => void;
 }
 
-export const enum GroupDirection {
+export enum GroupDirection {
   UP = "up",
   DOWN = "down",
   LEFT = "left",

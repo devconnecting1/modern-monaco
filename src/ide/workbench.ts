@@ -1,4 +1,4 @@
-import { Parts, type IWorkbenchConfiguration } from "./types";
+import type { Parts, IWorkbenchConfiguration } from "./types";
 import { WorkbenchLayout } from "./layout";
 import { TitleBarPart } from "./parts/titlebar";
 import { ActivityBarPart } from "./parts/activitybar";

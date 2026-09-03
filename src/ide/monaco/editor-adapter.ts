@@ -16,7 +16,7 @@ export interface MonacoEditorInputInit {
 export class MonacoEditorInput implements IEditorInput {
   readonly typeId = "monaco";
   private _model: MonacoTextModel | null = null;
-  private _ disposed = false;
+  private _disposed = false;
 
   constructor(
     private readonly _monaco: MonacoService,

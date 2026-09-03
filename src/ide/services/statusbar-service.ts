@@ -1,6 +1,6 @@
 import type { IDisposable } from "../event";
 
-export const enum StatusbarAlignment {
+export enum StatusbarAlignment {
   LEFT = 0,
   RIGHT = 1,
 }

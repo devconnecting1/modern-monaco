@@ -8,7 +8,7 @@ export interface IContributionDescriptor {
   readonly editorTypeId?: string;
 }
 
-export const enum WorkbenchPhase {
+export enum WorkbenchPhase {
   BlockStartup = 1,
   BlockRestore = 2,
   AfterRestored = 3,

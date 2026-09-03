@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent IDE</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-tertiary: #2d2d2d;
+      --bg-hover: #37373d;
+      --border: #3c3c3c;
+      --foreground: #cccccc;
+      --foreground-dim: #858585;
+      --foreground-bright: #e0e0e0;
+      --accent: #007acc;
+      --accent-hover: #1c8cd9;
+      --tab-active: #1e1e1e;
+      --tab-inactive: #2d2d2d;
+      --status-bg: #007acc;
+      --status-fg: #ffffff;
+      --activity-fg: #858585;
+      --activity-active: #ffffff;
+      --scrollbar-bg: transparent;
+      --scrollbar-thumb: rgba(121,121,121,0.4);
+    }
+
+    html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+    #app {
+      display: grid;
+      grid-template-rows: 35px 1fr 22px;
+      grid-template-columns: 48px 250px 1fr;
+      grid-template-areas:
+        "titlebar titlebar titlebar"
+        "activitybar sidebar editor"
+        "statusbar statusbar statusbar";
+      height: 100vh;
+      background: var(--bg-primary);
+      color: var(--foreground);
+    }
+
+    /* Titlebar */
+    .titlebar {
+      grid-area: titlebar;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 0 12px;
+      user-select: none;
+      -webkit-app-region: drag;
+    }
+    .titlebar-center {
+      font-size: 11px;
+      color: var(--foreground-dim);
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .titlebar-left, .titlebar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+    }
+    .titlebar-btn {
+      background: none;
+      border: none;
+      color: var(--foreground-dim);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .titlebar-btn:hover { background: var(--bg-hover); color: var(--foreground); }
+
+    /* Activity Bar */
+    .activitybar {
+      grid-area: activitybar;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 0;
+      gap: 2px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+    }
+    .activitybar-item {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 18px;
+      color: var(--activity-fg);
+      position: relative;
+    }
+    .activitybar-item:hover { color: var(--foreground); }
+    .activitybar-item.active { color: var(--activity-active); }
+    .activitybar-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: var(--foreground);
+      border-radius: 0 2px 2px 0;
+    }
+    .activitybar-spacer { flex: 1; }
+
+    /* Sidebar */
+    .sidebar {
+      grid-area: sidebar;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      height: 35px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--foreground);
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px 4px 24px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--foreground);
+      white-space: nowrap;
+    }
+    .file-item:hover { background: var(--bg-hover); }
+    .file-item.active { background: var(--bg-hover); }
+    .file-icon { font-size: 14px; opacity: 0.7; }
+    .folder-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--foreground);
+    }
+    .folder-item:hover { background: var(--bg-hover); }
+
+    /* Editor Area */
+    .editor-area {
+      grid-area: editor;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Editor Tabs */
+    .editor-tabs {
+      display: flex;
+      align-items: center;
+      height: 35px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .editor-tabs::-webkit-scrollbar { height: 0; }
+    .editor-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      height: 35px;
+      cursor: pointer;
+      font-size: 12px;
+      white-space: nowrap;
+      border-right: 1px solid var(--border);
+      color: var(--foreground-dim);
+      background: var(--tab-inactive);
+      min-width: fit-content;
+    }
+    .editor-tab.active {
+      color: var(--foreground-bright);
+      background: var(--tab-active);
+      border-top: 1px solid var(--accent);
+    }
+    .editor-tab:hover:not(.active) { background: var(--bg-hover); }
+    .editor-tab .close {
+      opacity: 0;
+      margin-left: 4px;
+      font-size: 14px;
+      border-radius: 3px;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .editor-tab:hover .close { opacity: 0.5; }
+    .editor-tab .close:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+    .tab-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #e2c08d;
+    }
+
+    /* Editor Pane */
+    .editor-pane {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Panel (bottom) */
+    .panel {
+      position: fixed;
+      bottom: 22px;
+      left: 298px;
+      right: 0;
+      height: 0;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: height 0.15s ease;
+      z-index: 10;
+    }
+    .panel.open { height: 250px; }
+    .panel-tabs {
+      display: flex;
+      align-items: center;
+      height: 35px;
+      padding: 0 8px;
+      gap: 2px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .panel-tab {
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border-radius: 3px;
+      color: var(--foreground-dim);
+      background: none;
+      border: none;
+    }
+    .panel-tab:hover { color: var(--foreground); }
+    .panel-tab.active { color: var(--foreground-bright); background: var(--bg-hover); }
+    .panel-content {
+      flex: 1;
+      overflow: auto;
+      padding: 8px 12px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 12px;
+      color: var(--foreground);
+    }
+
+    /* Statusbar */
+    .statusbar {
+      grid-area: statusbar;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 22px;
+      padding: 0 8px;
+      background: var(--status-bg);
+      color: var(--status-fg);
+      font-size: 12px;
+      user-select: none;
+    }
+    .statusbar-left, .statusbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .statusbar-item { cursor: default; padding: 0 4px; }
+    .statusbar-item.clickable { cursor: pointer; }
+    .statusbar-item.clickable:hover { background: rgba(255,255,255,0.12); }
+
+    /* AI Chat Sidebar (right) */
+    .ai-panel {
+      position: fixed;
+      top: 35px;
+      right: 0;
+      bottom: 22px;
+      width: 0;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: width 0.15s ease;
+      z-index: 20;
+      overflow: hidden;
+    }
+    .ai-panel.open { width: 380px; }
+    .ai-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      height: 35px;
+      font-size: 12px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .ai-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ai-msg {
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 95%;
+    }
+    .ai-msg.user {
+      background: var(--accent);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+    .ai-msg.assistant {
+      background: var(--bg-tertiary);
+      color: var(--foreground);
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+    .ai-msg.system {
+      background: transparent;
+      color: var(--foreground-dim);
+      font-size: 11px;
+      text-align: center;
+      align-self: center;
+      padding: 4px 8px;
+    }
+    .ai-input-area {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .ai-input {
+      flex: 1;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--foreground);
+      font-size: 13px;
+      outline: none;
+      resize: none;
+      font-family: inherit;
+    }
+    .ai-input:focus { border-color: var(--accent); }
+    .ai-send {
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .ai-send:hover { background: var(--accent-hover); }
+
+    /* Command Palette */
+    .command-palette-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      justify-content: center;
+      padding-top: 80px;
+    }
+    .command-palette-overlay.open { display: flex; }
+    .command-palette {
+      width: 500px;
+      max-height: 400px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .command-palette input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      color: var(--foreground);
+      font-size: 14px;
+      outline: none;
+    }
+    .command-palette-results {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .command-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .command-item:hover, .command-item.selected { background: var(--bg-hover); }
+    .command-item .shortcut { color: var(--foreground-dim); font-size: 11px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(121,121,121,0.7); }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "modern-monaco": "/modern-monaco/index.mjs",
+      "modern-monaco/core": "/modern-monaco/core.mjs",
+      "modern-monaco/workspace": "/modern-monaco/workspace.mjs",
+      "modern-monaco/editor-core": "/modern-monaco/editor-core.mjs",
+      "modern-monaco/lsp": "/modern-monaco/lsp/index.mjs"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <!-- Titlebar -->
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <span style="font-weight:600;font-size:12px;">AI Agent IDE</span>
+        <button class="titlebar-btn" onclick="location.reload()">File</button>
+        <button class="titlebar-btn">Edit</button>
+        <button class="titlebar-btn">View</button>
+        <button class="titlebar-btn">Help</button>
+      </div>
+      <div class="titlebar-center">AI Agent IDE — modern-monaco</div>
+      <div class="titlebar-right">
+        <button class="titlebar-btn" id="btn-command" title="Command Palette (Ctrl+Shift+P)">Commands</button>
+      </div>
+    </div>
+
+    <!-- Activity Bar -->
+    <div class="activitybar">
+      <button class="activitybar-item active" data-view="explorer" title="Explorer">Files</button>
+      <button class="activitybar-item" data-view="search" title="Search">Search</button>
+      <button class="activitybar-item" data-view="git" title="Source Control">Git</button>
+      <button class="activitybar-item" data-view="extensions" title="Extensions">Ext</button>
+      <div class="activitybar-spacer"></div>
+      <button class="activitybar-item" id="btn-ai" title="AI Assistant (Ctrl+Shift+A)">AI</button>
+      <button class="activitybar-item" title="Settings">Settings</button>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span>EXPLORER</span>
+      </div>
+      <div class="sidebar-content" id="file-tree"></div>
+    </div>
+
+    <!-- Editor Area -->
+    <div class="editor-area">
+      <div class="editor-tabs" id="editor-tabs"></div>
+      <div class="editor-pane" id="editor-pane"></div>
+    </div>
+
+    <!-- Statusbar -->
+    <div class="statusbar">
+      <div class="statusbar-left">
+        <span class="statusbar-item clickable" id="status-branch">main</span>
+        <span class="statusbar-item" id="status-sync">0 ↓ 0 ↑</span>
+      </div>
+      <div class="statusbar-right">
+        <span class="statusbar-item" id="status-cursor">Ln 1, Col 1</span>
+        <span class="statusbar-item" id="status-spaces">Spaces: 2</span>
+        <span class="statusbar-item" id="status-encoding">UTF-8</span>
+        <span class="statusbar-item clickable" id="status-language">TypeScript</span>
+        <span class="statusbar-item">Prettier</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Chat Panel -->
+  <div class="ai-panel" id="ai-panel">
+    <div class="ai-header">
+      <span>AI Assistant</span>
+      <button class="titlebar-btn" id="close-ai">x</button>
+    </div>
+    <div class="ai-messages" id="ai-messages">
+      <div class="ai-msg system">AI Agent IDE ready. Ask me anything about your code.</div>
+    </div>
+    <div class="ai-input-area">
+      <textarea class="ai-input" id="ai-input" rows="1" placeholder="Ask AI anything..."></textarea>
+      <button class="ai-send" id="ai-send">Send</button>
+    </div>
+  </div>
+
+  <!-- Command Palette -->
+  <div class="command-palette-overlay" id="cmd-overlay">
+    <div class="command-palette">
+      <input type="text" id="cmd-input" placeholder="Type a command...">
+      <div class="command-palette-results" id="cmd-results"></div>
+    </div>
+  </div>
+
+  <!-- Panel -->
+  <div class="panel" id="panel">
+    <div class="panel-tabs">
+      <button class="panel-tab active" data-panel="terminal">Terminal</button>
+      <button class="panel-tab" data-panel="output">Output</button>
+      <button class="panel-tab" data-panel="problems">Problems</button>
+    </div>
+    <div class="panel-content" id="panel-content">
+      <div>$ <span id="terminal-cursor">_</span></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { lazy, Workspace } from "modern-monaco";
+
+    // --- File System ---
+    const files = {
+      "src/index.ts": {
+        content: `import { createApp } from "./app";\n\nconst app = createApp();\napp.mount("#root");\n\nconsole.log("App started");`,
+        language: "typescript",
+      },
+      "src/app.ts": {
+        content: `export function createApp() {\n  return {\n    mount(selector: string) {\n      const root = document.querySelector(selector);\n      if (root) {\n        root.innerHTML = "<h1>Hello from AI Agent IDE</h1>";\n      }\n    },\n  };\n}`,
+        language: "typescript",
+      },
+      "src/utils.ts": {
+        content: `export function debounce<T extends (...args: unknown[]) => void>(\n  fn: T,\n  delay: number\n): T {\n  let timer: ReturnType<typeof setTimeout>;\n  return ((...args: unknown[]) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), delay);\n  }) as T;\n}\n\nexport function formatBytes(bytes: number): string {\n  if (bytes === 0) return "0 B";\n  const k = 1024;\n  const sizes = ["B", "KB", "MB", "GB"];\n  const i = Math.floor(Math.log(bytes) / Math.log(k));\n  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];\n}`,
+        language: "typescript",
+      },
+      "src/types.ts": {
+        content: `export interface Agent {\n  id: string;\n  name: string;\n  status: "idle" | "thinking" | "executing";\n  model: string;\n}\n\nexport interface Message {\n  role: "user" | "assistant" | "system";\n  content: string;\n  timestamp: number;\n}\n\nexport interface ToolCall {\n  id: string;\n  name: string;\n  args: Record<string, unknown>;\n  result?: string;\n}`,
+        language: "typescript",
+      },
+      "package.json": {
+        content: `{\n  "name": "ai-agent-ide",\n  "version": "0.1.0",\n  "type": "module",\n  "scripts": {\n    "dev": "bun dev",\n    "build": "bun run prepublishOnly",\n    "lint": "biome lint src/"\n  }\n}`,
+        language: "json",
+      },
+      "README.md": {
+        content: `# AI Agent IDE\n\nAn IDE for AI agents built with modern-monaco.\n\n## Features\n\n- Monaco Editor with full LSP support\n- Virtual filesystem (IndexedDB)\n- AI Chat panel\n- Command palette\n- Multiple file tabs\n\n## Getting Started\n\n\`\`\`bash\nbun install\nbun dev\n\`\`\``,
+        language: "markdown",
+      },
+    };
+
+    let currentFile = null;
+    let openTabs = [];
+    let editor = null;
+    let monacoNs = null;
+
+    // --- Init Workspace ---
+    const workspace = new Workspace({
+      name: "ai-agent-ide",
+      initialFiles: Object.fromEntries(
+        Object.entries(files).map(([k, v]) => [k, v.content])
+      ),
+      entryFile: "src/index.ts",
+    });
+
+    // --- Render File Tree ---
+    function renderFileTree() {
+      const tree = document.getElementById("file-tree");
+      tree.innerHTML = "";
+
+      const folders = {};
+      for (const [path] of Object.entries(files)) {
+        const parts = path.split("/");
+        if (parts.length > 1) {
+          const folder = parts[0];
+          if (!folders[folder]) folders[folder] = [];
+          folders[folder].push(parts.slice(1).join("/"));
+        }
+      }
+
+      for (const [folder, folderFiles] of Object.entries(folders)) {
+        const folderEl = document.createElement("div");
+        folderEl.className = "folder-item";
+        folderEl.innerHTML = `<span class="file-icon"></span> ${folder}`;
+        tree.appendChild(folderEl);
+
+        for (const file of folderFiles) {
+          const fullPath = `${folder}/${file}`;
+          const item = document.createElement("div");
+          item.className = "file-item" + (currentFile === fullPath ? " active" : "");
+          const icon = file.endsWith(".ts") ? "TS" : file.endsWith(".json") ? "{}" : "#";
+          const color = file.endsWith(".ts") ? "#3178c6" : file.endsWith(".json") ? "#f5a623" : "#858585";
+          item.innerHTML = `<span class="file-icon" style="color:${color};font-size:10px;font-weight:700;">${icon}</span> ${file}`;
+          item.onclick = () => openFile(fullPath);
+          tree.appendChild(item);
+        }
+      }
+    }
+
+    // --- Open File ---
+    async function openFile(path) {
+      if (!files[path]) return;
+
+      currentFile = path;
+      if (!openTabs.includes(path)) openTabs.push(path);
+
+      renderFileTree();
+      renderTabs();
+
+      const file = files[path];
+
+      // Update status
+      document.getElementById("status-language").textContent =
+        file.language === "typescript" ? "TypeScript" :
+        file.language === "json" ? "JSON" :
+        file.language === "markdown" ? "Markdown" : file.language;
+
+      if (!monacoNs) {
+        monacoNs = await lazy({
+          workspace,
+          defaultTheme: "vitesse-dark",
+        });
+      }
+
+      const pane = document.getElementById("editor-pane");
+      if (!editor) {
+        editor = monacoNs.editor.create(pane, {
+          automaticLayout: true,
+          minimap: { enabled: false },
+          fontSize: 14,
+          lineHeight: 22,
+          padding: { top: 8, bottom: 8 },
+          wordWrap: "off",
+          scrollBeyondLastLine: false,
+          renderWhitespace: "selection",
+          bracketPairColorization: { enabled: true },
+          guides: { bracketPairs: true },
+          smoothScrolling: true,
+          cursorBlinking: "smooth",
+          cursorSmoothCaretAnimation: "on",
+        });
+
+        editor.onDidChangeCursorPosition((e) => {
+          document.getElementById("status-cursor").textContent =
+            `Ln ${e.position.lineNumber}, Col ${e.position.column}`;
+        });
+      }
+
+      // Create or get model
+      const uri = monacoNs.Uri.parse(path);
+      let model = monacoNs.editor.getModel(uri);
+      if (model) {
+        model.setValue(file.content);
+      } else {
+        model = monacoNs.editor.createModel(file.content, file.language, uri);
+      }
+      editor.setModel(model);
+      editor.focus();
+    }
+
+    // --- Render Tabs ---
+    function renderTabs() {
+      const tabsEl = document.getElementById("editor-tabs");
+      tabsEl.innerHTML = "";
+
+      for (const path of openTabs) {
+        const file = files[path];
+        const tab = document.createElement("div");
+        tab.className = "editor-tab" + (path === currentFile ? " active" : "");
+        const name = path.split("/").pop();
+
+        tab.innerHTML = `
+          <span>${name}</span>
+          <span class="close" data-path="${path}">&times;</span>
+        `;
+
+        tab.onclick = (e) => {
+          if (e.target.classList.contains("close")) {
+            closeTab(path);
+          } else {
+            openFile(path);
+          }
+        };
+
+        tabsEl.appendChild(tab);
+      }
+    }
+
+    // --- Close Tab ---
+    function closeTab(path) {
+      openTabs = openTabs.filter((t) => t !== path);
+      if (currentFile === path) {
+        currentFile = openTabs.length > 0 ? openTabs[openTabs.length - 1] : null;
+        if (currentFile) {
+          openFile(currentFile);
+        } else if (editor) {
+          editor.setModel(null);
+        }
+      }
+      renderTabs();
+      renderFileTree();
+    }
+
+    // --- Activity Bar ---
+    document.querySelectorAll(".activitybar-item[data-view]").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".activitybar-item[data-view]").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      };
+    });
+
+    // --- AI Panel ---
+    const aiPanel = document.getElementById("ai-panel");
+    const aiMessages = document.getElementById("ai-messages");
+    const aiInput = document.getElementById("ai-input");
+
+    document.getElementById("btn-ai").onclick = () => {
+      aiPanel.classList.toggle("open");
+      document.getElementById("btn-ai").classList.toggle("active");
+    };
+    document.getElementById("close-ai").onclick = () => {
+      aiPanel.classList.remove("open");
+      document.getElementById("btn-ai").classList.remove("active");
+    };
+
+    function addAiMessage(role, content) {
+      const msg = document.createElement("div");
+      msg.className = `ai-msg ${role}`;
+      msg.textContent = content;
+      aiMessages.appendChild(msg);
+      aiMessages.scrollTop = aiMessages.scrollHeight;
+    }
+
+    document.getElementById("ai-send").onclick = () => sendAiMessage();
+    aiInput.onkeydown = (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendAiMessage();
+      }
+    };
+
+    function sendAiMessage() {
+      const text = aiInput.value.trim();
+      if (!text) return;
+      addAiMessage("user", text);
+      aiInput.value = "";
+
+      setTimeout(() => {
+        addAiMessage("assistant", `I received your message: "${text}". I'm an AI agent ready to help with your code. In a full implementation, this would connect to an LLM API.`);
+      }, 500);
+    }
+
+    // --- Panel ---
+    const panel = document.getElementById("panel");
+    document.querySelectorAll(".panel-tab").forEach((tab) => {
+      tab.onclick = () => {
+        document.querySelectorAll(".panel-tab").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+      };
+    });
+
+    // --- Command Palette ---
+    const cmdOverlay = document.getElementById("cmd-overlay");
+    const cmdInput = document.getElementById("cmd-input");
+    const cmdResults = document.getElementById("cmd-results");
+
+    const commands = [
+      { label: "Open File", shortcut: "Ctrl+O" },
+      { label: "Save File", shortcut: "Ctrl+S" },
+      { label: "Toggle Terminal", shortcut: "Ctrl+`" },
+      { label: "Toggle AI Panel", shortcut: "Ctrl+Shift+A" },
+      { label: "Format Document", shortcut: "Shift+Alt+F" },
+      { label: "Go to Definition", shortcut: "F12" },
+      { label: "Find References", shortcut: "Shift+F12" },
+      { label: "Rename Symbol", shortcut: "F2" },
+      { label: "Toggle Sidebar", shortcut: "Ctrl+B" },
+      { label: "Toggle Zen Mode", shortcut: "Ctrl+K Z" },
+    ];
+
+    function renderCommands(filter = "") {
+      cmdResults.innerHTML = "";
+      const filtered = commands.filter((c) =>
+        c.label.toLowerCase().includes(filter.toLowerCase())
+      );
+      for (const cmd of filtered) {
+        const el = document.createElement("div");
+        el.className = "command-item";
+        el.innerHTML = `<span>${cmd.label}</span><span class="shortcut">${cmd.shortcut}</span>`;
+        el.onclick = () => {
+          cmdOverlay.classList.remove("open");
+          if (cmd.label === "Toggle AI Panel") {
+            aiPanel.classList.toggle("open");
+            document.getElementById("btn-ai").classList.toggle("active");
+          } else if (cmd.label === "Toggle Terminal") {
+            panel.classList.toggle("open");
+          }
+        };
+        cmdResults.appendChild(el);
+      }
+    }
+
+    document.getElementById("btn-command").onclick = () => {
+      cmdOverlay.classList.add("open");
+      cmdInput.value = "";
+      renderCommands();
+      cmdInput.focus();
+    };
+
+    cmdOverlay.onclick = (e) => {
+      if (e.target === cmdOverlay) cmdOverlay.classList.remove("open");
+    };
+
+    cmdInput.oninput = () => renderCommands(cmdInput.value);
+    cmdInput.onkeydown = (e) => {
+      if (e.key === "Escape") cmdOverlay.classList.remove("open");
+    };
+
+    // --- Keyboard Shortcuts ---
+    document.onkeydown = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "P") {
+        e.preventDefault();
+        document.getElementById("btn-command").click();
+      }
+      if (e.ctrlKey && e.shiftKey && e.key === "A") {
+        e.preventDefault();
+        document.getElementById("btn-ai").click();
+      }
+      if (e.ctrlKey && e.key === "`") {
+        e.preventDefault();
+        panel.classList.toggle("open");
+      }
+      if (e.ctrlKey && e.key === "b") {
+        e.preventDefault();
+        const sidebar = document.querySelector(".sidebar");
+        sidebar.style.display = sidebar.style.display === "none" ? "" : "none";
+      }
+    };
+
+    // --- Init ---
+    renderFileTree();
+    openFile("src/index.ts");
+  </script>
+</body>
+</html>
