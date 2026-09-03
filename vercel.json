@@ -1,6 +1,4 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false,
   "headers": [
     {
       "source": "/modern-monaco/(.*)",
@@ -21,19 +19,6 @@
         {
           "key": "Content-Type",
           "value": "application/wasm"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
         }
       ]
     }
@@ -42,42 +27,6 @@
     {
       "source": "/",
       "destination": "/lazy.html"
-    },
-    {
-      "source": "/lazy",
-      "destination": "/lazy.html"
-    },
-    {
-      "source": "/manual",
-      "destination": "/manual.html"
-    },
-    {
-      "source": "/manual-no-workspace",
-      "destination": "/manual-no-workspace.html"
-    },
-    {
-      "source": "/ssr",
-      "destination": "/ssr.html"
-    },
-    {
-      "source": "/compare",
-      "destination": "/compare.html"
-    },
-    {
-      "source": "/custom-theme",
-      "destination": "/custom-theme.html"
-    },
-    {
-      "source": "/multi-theme",
-      "destination": "/multi-theme.html"
-    },
-    {
-      "source": "/css-valid-properties",
-      "destination": "/css-valid-properties.html"
-    },
-    {
-      "source": "/with-diagnostics-options",
-      "destination": "/with-diagnostics-options.html"
     }
   ]
 }
