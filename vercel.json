@@ -1,7 +1,7 @@
 {
   "headers": [
     {
-      "source": "/modern-monaco/(.*)",
+      "source": "/dist/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -14,11 +14,20 @@
       ]
     },
     {
-      "source": "/modern-monaco/(.*\\.wasm)",
+      "source": "/dist/(.*\\.wasm)",
       "headers": [
         {
           "key": "Content-Type",
           "value": "application/wasm"
+        }
+      ]
+    },
+    {
+      "source": "/dist/(.*\\.mjs)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript; charset=utf-8"
         }
       ]
     }
