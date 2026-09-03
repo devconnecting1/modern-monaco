@@ -11,7 +11,6 @@ on:
 permissions:
   contents: read
   security-events: write
-  actions: read
 
 jobs:
   trivy:
@@ -37,7 +36,3 @@ jobs:
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
-
-  codeql:
-    name: CodeQL Analysis
-    uses: ./.github/workflows/codeql.yml
